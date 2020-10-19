@@ -1,14 +1,19 @@
 import React from "react";
 import "./App.css";
-import Card from "@material-ui/core/Card";
 import Classifier from "./Classifier";
+import ModelData from "./ModelData";
 
 function App() {
   return (
     <div className="App">
-      <Classifier className="cardClass" />
-      <Classifier className="cardClass" />
-      <Classifier className="cardClass" />
+      <Classifier />
+      <ModelData
+        k={325}
+        trainingInstances={256}
+        precision={0.56}
+        recall={0.2}
+      />
+      <Classifier />
     </div>
   );
 }
