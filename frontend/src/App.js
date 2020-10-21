@@ -5,13 +5,15 @@ import ModelData from "./Cards/ModelData";
 import TrainingCard from "./Cards/TrainingCard";
 import TrainingMenu from "./TrainingMenu";
 
+import "bootstrap/dist/css/bootstrap.min.css";
+
 function App() {
   var isTrainingOpen = false;
   const trainingMenu = React.createRef();
 
   const handleTrainButton = (e) => {
     console.log("TRAINING CLICKED");
-    trainingMenu.current.handleTrainingClick();
+    trainingMenu.current.open();
   };
 
   return (
@@ -24,7 +26,7 @@ function App() {
         recall={0.2}
       />
       <TrainingCard onTrain={handleTrainButton} />
-      <TrainingMenu open={true} ref={trainingMenu} />
+      <TrainingMenu ref={trainingMenu} />
     </div>
   );
 }
