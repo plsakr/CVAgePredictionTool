@@ -1,0 +1,9 @@
+.trainingButtonsDiv {
+  position: absolute;
+  bottom: 0;
+}
+
+.trainingButtons {
+  margin-left: 1rem !important;
+  margin-right: 1rem !important;
+}

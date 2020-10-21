@@ -1,8 +1,8 @@
 import React from "react";
 import "./App.css";
-import Classifier from "./Classifier";
-import ModelData from "./ModelData";
-import TrainingCard from "./TrainingCard";
+import Classifier from "./Cards/Classifier";
+import ModelData from "./Cards/ModelData";
+import TrainingCard from "./Cards/TrainingCard";
 import TrainingMenu from "./TrainingMenu";
 
 function App() {

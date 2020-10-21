@@ -22,35 +22,3 @@
   width: 20rem;
   height: 100%;
 }
-
-.myImage {
-  width: 100% auto;
-  max-height: 13rem;
-}
-
-.predictionButtons {
-  position: absolute;
-  bottom: 0;
-}
-
-.info {
-  align-self: center;
-}
-
-.info em {
-  font-weight: bold;
-}
-
-.longText {
-  word-wrap: normal;
-}
-
-.trainingButtonsDiv {
-  position: absolute;
-  bottom: 0;
-}
-
-.trainingButtons {
-  margin-left: 1rem !important;
-  margin-right: 1rem !important;
-}

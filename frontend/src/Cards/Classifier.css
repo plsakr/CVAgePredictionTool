@@ -1,0 +1,9 @@
+.myImage {
+  width: 100% auto;
+  max-height: 13rem;
+}
+
+.predictionButtons {
+  position: absolute;
+  bottom: 0;
+}

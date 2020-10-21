@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Card from "@material-ui/core/Card";
 import { Button } from "@material-ui/core";
+import "./Classifier.css";
 
 function Classifier() {
   const [image, setImage] = useState();

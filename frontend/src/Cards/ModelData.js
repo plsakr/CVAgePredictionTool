@@ -1,5 +1,6 @@
 import React from "react";
 import Card from "@material-ui/core/Card";
+import "./ModelData.css";
 
 function ModelData(props) {
   var k = props.k || 32;

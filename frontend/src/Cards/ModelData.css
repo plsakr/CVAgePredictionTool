@@ -1,0 +1,11 @@
+.info {
+  align-self: flex-start;
+}
+
+.info em {
+  font-weight: bold;
+}
+
+.longText {
+  word-wrap: normal;
+}
