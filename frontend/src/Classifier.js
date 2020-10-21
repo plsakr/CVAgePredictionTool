@@ -10,11 +10,11 @@ function Classifier() {
     hiddenFileInput.current.click();
   };
 
-  var imageOrButton;
-  if (typeof image == "undefined") {
-    imageOrButton = (
-      <div>
+  function browseButton(isPredictOn) {
+    return (
+      <div className="predictionButtons">
         <Button
+          className="trainingButtons"
           variant="contained"
           color="primary"
           onClick={handleClick}
@@ -34,10 +34,29 @@ function Classifier() {
             setImage(URL.createObjectURL(hiddenFileInput.current.files[0]));
           }}
         />
+        <Button
+          disabled={!isPredictOn}
+          color={isPredictOn ? "secondary" : ""}
+          className="trainingButtons"
+          variant="contained"
+          disableElevation
+        >
+          Predict
+        </Button>
       </div>
     );
+  }
+
+  var imageOrButton;
+  if (typeof image == "undefined") {
+    imageOrButton = browseButton(false);
   } else {
-    imageOrButton = <img src={image} alt="" />;
+    imageOrButton = (
+      <div className="cardBody">
+        <img class="myImage" src={image} alt="" />
+        {browseButton(true)}
+      </div>
+    );
   }
 
   return (

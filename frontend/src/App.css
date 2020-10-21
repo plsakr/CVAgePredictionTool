@@ -9,20 +9,48 @@
   margin: 1rem;
   padding-inline: 0.5rem;
   padding-bottom: 1rem;
+  max-height: 25rem;
 }
 
 .cardBody {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-left: 3rem;
-  padding-right: 3rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  width: 20rem;
+  height: 100%;
+}
+
+.myImage {
+  width: 100% auto;
+  max-height: 13rem;
+}
+
+.predictionButtons {
+  position: absolute;
+  bottom: 0;
 }
 
 .info {
-  align-self: flex-start;
+  align-self: center;
 }
 
 .info em {
   font-weight: bold;
+}
+
+.longText {
+  word-wrap: normal;
+}
+
+.trainingButtonsDiv {
+  position: absolute;
+  bottom: 0;
+}
+
+.trainingButtons {
+  margin-left: 1rem !important;
+  margin-right: 1rem !important;
 }
