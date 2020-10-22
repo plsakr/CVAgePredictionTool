@@ -1,18 +1,12 @@
 import React from "react";
-import Dialog from "@material-ui/core/Dialog";
-import DialogActions from "@material-ui/core/DialogActions";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogContentText from "@material-ui/core/DialogContentText";
-import DialogTitle from "@material-ui/core/DialogTitle";
 import Modal from "react-bootstrap/Modal";
-
-import Tabs from "@material-ui/core/Tabs";
-import Tab from "@material-ui/core/Tab";
 
 import "./Dialog.css";
 import Button from "react-bootstrap/Button";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ToggleButton from "react-bootstrap/ToggleButton";
+
+import Params from "./Training/Params";
 
 class TrainingMenu extends React.Component {
   constructor(props) {
@@ -20,28 +14,33 @@ class TrainingMenu extends React.Component {
     this.state = { isOpen: false, tabValue: "0" };
   }
 
+  // allow others to open me
   open() {
     this.setState({ isOpen: true });
   }
 
+  // train button clicked. gather all data, tell the app what happened, and close the dialog
   handleOnTrain() {
     this.setState({ isOpen: false });
   }
 
+  // close button clicked. close dialog and do nothing
   handleOnClose() {
     this.setState({ isOpen: false });
   }
 
   render() {
+    // the tabs
     const radios = [
       { name: "Custom Parameters", value: "0" },
       { name: "Custom Dataset", value: "1" },
     ];
 
+    // the tab content
     var currentState;
 
     if (this.state.tabValue == "0") {
-      currentState = <p>You are changing the params!</p>;
+      currentState = <Params />;
     } else {
       currentState = <p>You are uploading custom images!</p>;
     }

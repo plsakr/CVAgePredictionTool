@@ -1,0 +1,19 @@
+.header {
+  margin-top: 2rem;
+}
+
+.myForm {
+  display: flex;
+  align-items: center;
+  margin: 2rem;
+}
+
+.myFormComponent {
+  width: 50%;
+}
+
+.bottomSlider {
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}
