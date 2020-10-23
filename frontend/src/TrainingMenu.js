@@ -7,6 +7,7 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ToggleButton from "react-bootstrap/ToggleButton";
 
 import Params from "./Training/Params";
+import Dataset from "./Training/Dataset";
 
 class TrainingMenu extends React.Component {
   constructor(props) {
@@ -42,7 +43,7 @@ class TrainingMenu extends React.Component {
     if (this.state.tabValue == "0") {
       currentState = <Params />;
     } else {
-      currentState = <p>You are uploading custom images!</p>;
+      currentState = <Dataset />;
     }
 
     return (
@@ -55,7 +56,7 @@ class TrainingMenu extends React.Component {
       >
         <Modal.Header closeButton>
           <Modal.Title id="example-custom-modal-styling-title">
-            Custom Modal Styling
+            Train New Model
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>

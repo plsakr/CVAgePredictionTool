@@ -1,0 +1,28 @@
+.dropzone {
+  position: relative;
+  height: 15rem;
+  overflow: hidden;
+}
+
+.dropzone-active {
+  border: 1px solid;
+}
+
+.text-center {
+  margin-top: 20px;
+}
+
+.imageList {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: -20px;
+  right: -20px;
+  overflow: scroll;
+}
+
+.prevImg {
+  width: 8rem;
+  height: 6rem;
+  margin: 5px;
+}
