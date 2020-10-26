@@ -12,6 +12,7 @@ import Dataset from "./Training/Dataset";
 class TrainingMenu extends React.Component {
   constructor(props) {
     super(props);
+    this.onTrain = props.onTrain;
     this.state = { isOpen: false, tabValue: "0" };
   }
 
@@ -22,7 +23,9 @@ class TrainingMenu extends React.Component {
 
   // train button clicked. gather all data, tell the app what happened, and close the dialog
   handleOnTrain() {
+    console.log("dialog train button pressed");
     this.setState({ isOpen: false });
+    this.onTrain(); // this method should take all the needed data!
   }
 
   // close button clicked. close dialog and do nothing

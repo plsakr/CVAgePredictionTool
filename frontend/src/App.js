@@ -16,6 +16,18 @@ function App() {
     trainingMenu.current.open();
   };
 
+  const handleResetButton = (e) => {
+    console.log("HANDLING MODEL RESET!");
+  };
+
+  const handleTrainNewModel = () => {
+    console.log("HANDLING NEW MODEL CREATION!");
+    // this method should take all needed info as parameters.
+    // then create the backend request to train the model
+    // somehow create a spinner that disables everything until training is done
+    // after training, reenable reset button
+  };
+
   return (
     <div className="App">
       <Classifier />
@@ -25,8 +37,8 @@ function App() {
         precision={0.56}
         recall={0.2}
       />
-      <TrainingCard onTrain={handleTrainButton} />
-      <TrainingMenu ref={trainingMenu} />
+      <TrainingCard onTrain={handleTrainButton} onReset={handleResetButton} />
+      <TrainingMenu ref={trainingMenu} onTrain={handleTrainNewModel} />
     </div>
   );
 }

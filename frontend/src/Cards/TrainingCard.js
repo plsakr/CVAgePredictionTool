@@ -4,6 +4,14 @@ import { Button } from "@material-ui/core";
 import "./TrainingCard.css";
 
 function TrainingCard(props) {
+  const [isReset, setReset] = useState(false);
+
+  const handleReset = (e) => {
+    console.log("Resetting model!");
+    setReset(true);
+    props.onReset(e);
+  };
+
   return (
     <Card className="cardClass" variant="outlined">
       <div className="cardBody">
@@ -26,10 +34,12 @@ function TrainingCard(props) {
             Train
           </Button>
           <Button
+            disabled={isReset}
             className="trainingButtons"
             variant="contained"
             color="secondary"
             disableElevation
+            onClick={handleReset}
           >
             Reset
           </Button>

@@ -11,6 +11,12 @@ function Classifier() {
     hiddenFileInput.current.click();
   };
 
+  const handlePredict = (e) => {
+    console.log("sending prediction request!");
+    // TODO: send request by sending image, receive result immediately, show it somehow!
+    setImage();
+  };
+
   function browseButton(isPredictOn) {
     return (
       <div className="predictionButtons">
@@ -37,10 +43,11 @@ function Classifier() {
         />
         <Button
           disabled={!isPredictOn}
-          color={isPredictOn ? "secondary" : ""}
+          color={isPredictOn ? "secondary" : "default"}
           className="trainingButtons"
           variant="contained"
           disableElevation
+          onClick={handlePredict}
         >
           Predict
         </Button>
@@ -54,7 +61,7 @@ function Classifier() {
   } else {
     imageOrButton = (
       <div className="cardBody">
-        <img class="myImage" src={image} alt="" />
+        <img className="myImage" src={image} alt="" />
         {browseButton(true)}
       </div>
     );
