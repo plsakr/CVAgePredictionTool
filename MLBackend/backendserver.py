@@ -35,6 +35,7 @@ def get_next_job_id():
 @app.route('/info', methods=['GET'])
 def get_model_info():
     print('get_model_info() called!')
+    get_next_job_id()
     return {'training': 200, 'testing': 50, 'tPrecision': 0.9, 'tRecall': 0.89, 'fPrecision': 0.9, 'fRecall': 0.89}
 
 
