@@ -1,10 +1,16 @@
 from flask import Flask, redirect, url_for, request
+import multiprocessing
+from queue import SimpleQueue
 
 
 
 app = Flask(__name__)
 
 validJobID = 0
+currentJobs = []
+manager = multiprocessing.Manager()
+jobQueue = manager.Queue() # create a thread-safe queue for background ML tasks
+
 
 def get_next_job_id():
     global validJobID
@@ -30,7 +36,7 @@ def predict_age():
     return res
 
 
-@app.rout('/train', methods=['POST'])
+@app.route('/train', methods=['POST'])
 def train_model():
     # get actual train type
     # if reset
@@ -48,10 +54,30 @@ def train_model():
 
 @app.route('/jobinfo', methods=['GET'])
 def get_job_info():
+    global jobQueue
     print('job_info() called!')
+    jobQueue.put('hi')
+    return {}
     # get job id from args
     # return job status/progress
 
+
+def background_worker():
+    global jobQueue
+    print("background worker started!")
+    while True:
+        print('looping!')
+        while jobQueue.empty():
+            pass
+        nextJob = jobQueue.get(block=True) # wait here until a job is available to complete
+        print('Found a job! Executing now')
+        
+
+        
+
 # run the server
 if __name__ == "__main__":
+    print('starting background jobs')
+    myJob = multiprocessing.Process(target=background_worker)
+    myJob.start()
     app.run()
