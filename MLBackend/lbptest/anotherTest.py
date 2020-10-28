@@ -10,7 +10,6 @@ import pickle
 from skimage import feature
 from sklearn import svm
 from sklearn.model_selection import StratifiedKFold
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import metrics
@@ -64,11 +63,6 @@ class LocalBinaryPatterns:
 def train(X, y, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=0, max_range_k=0 ):
 
     X0_train, X_test, y0_train, y_test = train_test_split(X,y,test_size=testing_size, random_state=7)
-    #Scaler is needed to scale all the inputs to a similar range
-    scaler = StandardScaler()
-    scaler = scaler.fit(X0_train)
-    X0_train = scaler.transform(X0_train)
-    X_test = scaler.transform(X_test)
     
     eval_score_list = []
     if optimal_k and min_range_k>0 and max_range_k>min_range_k:
@@ -91,7 +85,7 @@ def train(X, y, k_cross_validation_ratio, testing_size, optimal_k=True, min_rang
     k_optimal = scores_list.index(max(scores_list))
     model = KNeighborsClassifier(n_neighbors= k_optimal)
 
-    """accuracys=[]
+    accuracys=[]
 
     skf = StratifiedKFold(n_splits=10, random_state=None)
     skf.get_n_splits(X0_train, y0_train)
@@ -107,13 +101,14 @@ def train(X, y, k_cross_validation_ratio, testing_size, optimal_k=True, min_rang
         accuracys.append(score)
         print("Validation batch score: {}".format(score))
 
-    eval_accuracy = np.mean(accuracys)"""
-    model.fit(X0_train, y0_train)
+    eval_accuracy = np.mean(accuracys)
+
     #save the pretrained model:
+    model.fit(X0_train, y0_train)
     model_name='pretrained_knn_model'
     pickle.dump(model, open(model_name, 'wb'))
 
-    return model, X0_train, y0_train, X_test, y_test
+    return eval_accuracy, model, X0_train, y0_train, X_test, y_test
 
 
 def loadPreTrained(modelName):
@@ -147,40 +142,47 @@ def preprocessingData(file_path=path):
     return images 
 
 def dataframeCreation(images):
-    lbp_df = pd.DataFrame()
-    # the parameters of the LBP algo
-    # higher = more time required
-    sample_points = 16
-    radius = 4
-    images_crop = []
-    count=0
-    for i in tqdm(images):
-        if ".DS_Store" in i:
-            continue  
-        img = cv2.imread(i)
-        faces, x,y,w,h = locateFace(img)
-        if not faces == ():
-            crop_img = img[y:y+h, x:x+w]
-            lbp = LocalBinaryPatterns(sample_points, radius).describe(cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY))
-            row = dict(zip(range(0, len(lbp)), lbp))
-            row['ageRange'] = i.split('/')[3] ## TODO: change 3 to the index in the path where the age range is located
-            lbp_df = lbp_df.append(row, ignore_index=True)
+    if os.path.exists('./lbp.csv'):
+        lbp_df = pd.read_csv('./lbp.csv', index_col=0)
+        count = 0
+    else:
+        lbp_df = pd.DataFrame()
+        # the parameters of the LBP algo
+        # higher = more time required
+        sample_points = 16
+        radius = 4
+        images_crop = []
+        count=0
+        for i in tqdm(images):
+            if ".DS_Store" in i:
+                continue  
+            img = cv2.imread(i)
+            faces, x,y,w,h = locateFace(img)
+            if not faces == ():
+                crop_img = img[y:y+h, x:x+w]
+                lbp = LocalBinaryPatterns(sample_points, radius).describe(cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY))
+                row = dict(zip(range(0, len(lbp)), lbp))
+                row['ageRange'] = i.split('/')[3] ## TODO: change 3 to the index in the path where the age range is located
+                lbp_df = lbp_df.append(row, ignore_index=True)
+
+            else:
+                count= count+1
+                print("Error! No face was detected. Please try again with a clearer picture")
+                #to remove the remove method    
+                os.remove(i)
+
+        print("Count: empty: {}".format(count))
+        # number of null values in our df. Should always be 0
+        lbp_df[2].isna().sum()
+        corrM = lbp_df.corr()
+        #print(corrM)
+        # the age groups we decide we call 'young'
+        young = ['age_10_14', 'age_15_19','age_20_24']
+        # in this column, true means young, false means old
+        lbp_df['age_new'] = lbp_df['ageRange'].isin(young)
+        lbp_df.to_csv('./lbp.csv')
+
     
-        else:
-            count= count+1
-            print("Error! No face was detected. Please try again with a clearer picture")
-            #to remove the remove method    
-            os.remove(i)
-       
-    print("Count: empty: {}".format(count))
-    # number of null values in our df. Should always be 0
-    lbp_df[2].isna().sum()
-    corrM = lbp_df.corr()
-    #print(corrM)
-    # the age groups we decide we call 'young'
-    young = ['age_10_14', 'age_15_19','age_20_24']
-    # in this column, true means young, false means old
-    lbp_df['age_new'] = lbp_df['ageRange'].isin(young)
     # randomize the df so that old and young are mixed
     random_df = lbp_df.sample(frac=1).reset_index(drop=True)
     random_df.head()
@@ -242,19 +244,18 @@ def predict(imagePath, model):
 
 images = preprocessingData(path)
 X,y, _ =dataframeCreation(images)
-#model = loadPreTrained(modelName="pretrained_knn_model")
-model, X_train, y_train, X_test, y_test = train(X, y, k_cross_validation_ratio=5, testing_size=0.2, optimal_k=True, min_range_k= 1, max_range_k=100)
+# model = loadPreTrained(modelName="pretrained_knn_model")
+eval_accuracy, model, X_train, y_train, X_test, y_test = train(X, y, k_cross_validation_ratio=5, testing_size=0.2, optimal_k=True, min_range_k= 1, max_range_k=100)
 X0_train, X_test, y0_train, y_test = train_test_split(X,y,test_size=0.2, random_state=7)
-
 test_score, conf_rep = test(X0_train, y0_train,X_test, y_test, modelName="pretrained_knn_model")
 #print("Evaluation Score: {}".format(eval_accuracy))
 print("Test Score: {}".format(test_score))
 print(conf_rep)
 
-model.fit(X0_train, y0_train)
+# model.fit(X0_train, y0_train)
 #model = loadPreTrained("pretrained_knn_model")
-testPath = '../dataset/male/age_10_14/pic_0014.png'
-testPath2 = "../dataset/male/age_50_54/pic_0028.png"
+testPath = '../dataset/female/age_15_19/01445.jpg'
+testPath2 = '../dataset/female/age_60_94/16883.jpg'
 patht = [testPath, testPath2]
 label , pred=predict(patht, model)
 print(pred)
