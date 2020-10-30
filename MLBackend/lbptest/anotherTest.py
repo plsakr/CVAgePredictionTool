@@ -90,14 +90,14 @@ def train(X_young,y_young, X_old, y_old, k_cross_validation_ratio, testing_size,
 
     #finding the optimal nb of neighbors
     for k in tqdm(k_range):
-        knn = KNeighborsClassifier(n_neighbors=k, weights = 'distance' ,algorithm='ball_tree', p=3)
+        knn = KNeighborsClassifier(n_neighbors=k, weights = 'distance' ,algorithm='ball_tree', p=1)
         knn.fit(X0_train, y0_train)
         y_pred = knn.predict(X_test)
         scores[k] = metrics.accuracy_score(y_test, y_pred)
         scores_list.append(metrics.accuracy_score(y_test, y_pred))
     
     k_optimal = scores_list.index(max(scores_list))
-    model = KNeighborsClassifier(n_neighbors= k_optimal, weights = 'distance', algorithm='ball_tree', p=3)
+    model = KNeighborsClassifier(n_neighbors= k_optimal, weights = 'distance', algorithm='ball_tree', p=1)
     #model.fit(X0_train, y0_train)
     accuracys=[]
 
@@ -179,20 +179,18 @@ def train2(X,y, k_cross_validation_ratio, testing_size, optimal_k=True, min_rang
 
     #finding the optimal nb of neighbors
     for k in tqdm(k_range):
-        knn = KNeighborsClassifier(n_neighbors=k, weights = 'distance' ,algorithm='ball_tree', p=3)
+        knn = KNeighborsClassifier(n_neighbors=k, weights = 'distance', algorithm='ball_tree', p=1)
         knn.fit(X0_train, y0_train)
         y_pred = knn.predict(X_test)
         scores[k] = metrics.accuracy_score(y_test, y_pred)
         scores_list.append(metrics.accuracy_score(y_test, y_pred))
     
     k_optimal = scores_list.index(max(scores_list))
-    model = KNeighborsClassifier(n_neighbors= k_optimal, weights = 'distance', algorithm='ball_tree', p=3)
+    model = KNeighborsClassifier(n_neighbors= k_optimal, weights = 'distance', algorithm='ball_tree', p=1)
     #model.fit(X0_train, y0_train)
     accuracys=[]
 
     nb_splits=10
-    skf = StratifiedKFold(n_splits=10, random_state=None)
-    skf.get_n_splits(X0_train, y0_train)
 
     skf = StratifiedKFold(n_splits=10, random_state=None)
     skf.get_n_splits(X0_train, y0_train)
@@ -442,7 +440,7 @@ def performJob(job, sharedObject):
             test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName=model_name)
 
 
-path = "../dataset"
+path = "../dataset/"
 
 def predictFromMLScriptOnly(path):
     images = preprocessingData(path)
@@ -460,5 +458,8 @@ def predictFromMLScriptOnly(path):
     testPath = '../dataset/male/age_10_14/pic_0014.png'
     testPath2 = "../dataset/male/age_50_54/pic_0028.png"
     patht = [testPath, testPath2]
-    label , pred=predict(patht, model)
+    X=createInputsFromImagePaths(patht)
+    label , pred = predict(X, model)
     print(pred)
+
+predictFromMLScriptOnly(path)
