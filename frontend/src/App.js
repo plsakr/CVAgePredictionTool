@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import "./App.css";
 import Classifier from "./Cards/Classifier";
 import ModelData from "./Cards/ModelData";
@@ -8,78 +8,95 @@ import TrainingMenu from "./TrainingMenu";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/css/bootstrap.css"; // or include from a CDN
 import "react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
+import TrainingLoad from "./TrainingLoad";
 
 const backend = "http://127.0.0.1:5000";
 const defaultModel = "pretrained_knn_model";
 
-function App() {
-  const [modelName, setModelName] = useState("");
-  const [modelScores, setModelScores] = useState();
-  const [modelParams, setModelParams] = useState();
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      modelName: "",
+      modelScores: undefined,
+      modelParams: {},
+      isTraining: false,
+      trainingId: -1,
+    };
+    this.isTrainingOpen = false;
+    this.trainingMenu = React.createRef();
+  }
 
-  var isTrainingOpen = false;
-  const trainingMenu = React.createRef();
-
-  useEffect(() => {
+  componentDidMount() {
     fetch(`${backend}/info`).then((result) => {
       if (result.ok) {
         result.json().then((body) => {
           console.log(body);
-          setModelParams(body.model_params);
-          setModelName(body.model_name);
-          setModelScores(body.model_scores);
+          this.setState({
+            modelName: body.model_name,
+            modelScores: body.model_scores,
+            modelParams: body.model_params,
+            isTraining: body.isTraining,
+          });
         });
       }
     });
-  }, []);
+  }
 
-  const handlePredict = (base64) => {};
+  handlePredict(base64) {}
 
-  const handleTrainButton = (e) => {
+  handleTrainButton(e) {
     console.log("TRAINING CLICKED");
-    trainingMenu.current.open();
-  };
+    this.trainingMenu.current.open();
+  }
 
-  const handleResetButton = (e) => {
+  handleResetButton(e) {
     console.log("HANDLING MODEL RESET!");
-  };
+  }
 
-  const handleTrainNewModel = () => {
+  handleTrainNewModel(jobId) {
     console.log("HANDLING NEW MODEL CREATION!");
-    // this method should take all needed info as parameters.
-    // then create the backend request to train the model
-    // somehow create a spinner that disables everything until training is done
-    // after training, reenable reset button
-  };
+    this.setState({ isTraining: true, trainingId: jobId });
+  }
 
-  const app = () => {
-    if (typeof modelScores !== "undefined") {
+  handleTrainDone() {
+    console.log("Received train finished!");
+    this.setState({ isTraining: false, trainingId: -1 });
+  }
+
+  render() {
+    if (typeof this.state.modelScores !== "undefined") {
       return (
         <div className="App">
-          <Classifier onPredict={handlePredict} />
+          <Classifier onPredict={this.handlePredict.bind(this)} />
           <ModelData
-            k={modelParams.K}
-            trainingInstances={modelParams.train_nbr}
-            testingInstances={modelParams.test_nbr}
-            precisionY={modelScores.Young.precision}
-            recallY={modelScores.Young.recall}
-            precisionO={modelScores.Old.precision}
-            recallO={modelScores.Old.recall}
+            k={this.state.modelParams.K}
+            trainingInstances={this.state.modelParams.train_nbr}
+            testingInstances={this.state.modelParams.test_nbr}
+            precisionY={this.state.modelScores.Young.precision}
+            recallY={this.state.modelScores.Young.recall}
+            precisionO={this.state.modelScores.Old.precision}
+            recallO={this.state.modelScores.Old.recall}
           />
           <TrainingCard
-            onTrain={handleTrainButton}
-            onReset={handleResetButton}
-            modelName={modelName}
+            onTrain={this.handleTrainButton.bind(this)}
+            onReset={this.handleResetButton.bind(this)}
+            modelName={this.state.modelName}
           />
-          <TrainingMenu ref={trainingMenu} onTrain={handleTrainNewModel} />
+          <TrainingMenu
+            ref={this.trainingMenu}
+            onTrain={this.handleTrainNewModel.bind(this)}
+          />
+          <TrainingLoad
+            isTraining={this.state.isTraining}
+            jobId={this.state.trainingId}
+          />
         </div>
       );
     } else {
       return <div></div>;
     }
-  };
-
-  return app();
+  }
 }
 
 export default App;

@@ -60,7 +60,7 @@ class LocalBinaryPatterns:
 		return hist
 
 
-def train(X, y, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=0, max_range_k=100 ):
+def train(X, y, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=1, max_range_k=100,model_name="pretrained_knn_model", progressObject=None, jobId=-1):
 
     X0_train, X_test, y0_train, y_test = train_test_split(X,y,test_size=testing_size, random_state=7)
     
@@ -84,8 +84,10 @@ def train(X, y, k_cross_validation_ratio, testing_size, optimal_k=True, min_rang
         y_pred = knn.predict(X_test)
         scores[k] = metrics.accuracy_score(y_test, y_pred)
         scores_list.append(metrics.accuracy_score(y_test, y_pred))
+        if progressObject != None:
+            progressObject['jobProgress'][jobId] = min((k_range.index(k)+1.0)/len(k_range), 0.99)
     
-    k_optimal = scores_list.index(max(scores_list))
+    k_optimal = scores_list.index(max(scores_list))+min_range_k
     model = KNeighborsClassifier(n_neighbors= k_optimal)
 
     accuracys=[]
@@ -108,7 +110,6 @@ def train(X, y, k_cross_validation_ratio, testing_size, optimal_k=True, min_rang
 
     #save the pretrained model:
     model.fit(X0_train, y0_train)
-    model_name='pretrained_knn_model'
     pickle.dump(model, open(model_name, 'wb'))
 
     return eval_accuracy, model, X0_train, y0_train, X_test, y_test, k_optimal
@@ -340,11 +341,30 @@ def performJob(job, sharedObject):
         sharedObject['jobResults'][job['jobID']] = {'label': labels[0]}
     if jobType == 'TRAIN':
         if job['trainType'] == 'params':
+            sharedObject['isTraining'] = True
             print("training new model based on our dataset")
+            model_name="user_knn_model"
             X, y = getRandomSamples(job['nbrYoung'], job['nbrOld'])
 
-            eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train(X, y, k_cross_validation_ratio=5, testing_size=0.2, optimal_k=True, min_range_k= 1, max_range_k=100)
+            eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train(X, y, k_cross_validation_ratio=5, testing_size=job['test_ratio'], optimal_k=job['optimizeK'], min_range_k= job['minK'], max_range_k=job['maxK'],model_name=model_name, progressObject=sharedObject, jobId=job['jobID'])
             test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName=model_name)
+
+            sharedObject['model_name'] = model_name
+            sharedObject['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+            sharedObject['u_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
+
+            with open('./config.json', 'r+') as f:
+                config = json.load(f)
+                f.seek(0)
+                config['model_name'] = model_name
+                config['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+                config['u_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
+                json.dump(config, f)
+                f.truncate()
+            sharedObject['jobProgress'][job['jobID']] = 1.0
+            sharedObject['isTraining'] = False
+            print('finishedTraining!')
+
 
     
     

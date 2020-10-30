@@ -8,6 +8,7 @@ import ToggleButton from "react-bootstrap/ToggleButton";
 
 import Params from "./Training/Params";
 import Dataset from "./Training/Dataset";
+import { backend } from "./Config";
 
 class TrainingMenu extends React.Component {
   constructor(props) {
@@ -34,25 +35,66 @@ class TrainingMenu extends React.Component {
   handleOnTrain() {
     console.log("dialog train button pressed");
 
+    var req;
     if (this.state.tabValue === "0") {
-      const minK = this.state.minK;
-      const maxK = this.state.maxK;
+      const minKVal = this.state.minK;
+      const maxKVal = this.state.maxK;
       const isChecked = this.state.isChecked;
       const oldPicsNbr = this.state.oldPicsNbr;
       const youngPicsNbr = this.state.youngPicsNbr;
       const testingRatio = this.state.testingRatio;
 
-      if (isChecked){
-        if (maxK > minK) {
-          const req  
-
+      if (isChecked) {
+        if (maxKVal > minKVal) {
+          req = {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              isReset: false,
+              isCustom: false,
+              optimizeK: true,
+              minK: minKVal,
+              maxK: maxKVal,
+              nbrYoung: youngPicsNbr,
+              nbrOld: oldPicsNbr,
+              testRatio: testingRatio,
+            }),
+          };
         } else {
           console.log("maxK cannot be larger than minK");
         }
+      } else {
+        req = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            isReset: false,
+            isCustom: false,
+            optimizeK: false,
+            minK: minKVal,
+            nbrYoung: youngPicsNbr,
+            nbrOld: oldPicsNbr,
+            testRatio: testingRatio,
+          }),
+        };
       }
-      
     } else {
       // TODO
+    }
+
+    if (req !== "undefined") {
+      fetch(`${backend}/train`, req).then((res) => {
+        if (!res.ok) {
+          console.log("There was a problem with the train request!");
+        } else {
+          res.json().then((body) => {
+            const jobId = body.jobId;
+
+            this.setState({ isOpen: false });
+            this.onTrain(jobId);
+          });
+        }
+      });
     }
 
     this.setState({ isOpen: false });

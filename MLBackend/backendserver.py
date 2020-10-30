@@ -17,6 +17,7 @@ if __name__ == '__main__':
     sharedObject = manager.dict()
     sharedObject['jobProgress'] = manager.dict()
     sharedObject['jobResults'] = manager.dict()
+    sharedObject['isTraining'] = False
 else:
     print('__name__ is', __name__)
 
@@ -42,9 +43,9 @@ def get_model_info():
     modelName = sharedObject['model_name']
 
     if modelName == 'pretrained_knn_model':
-        return {'model_name': modelName, 'model_scores': sharedObject['p_model_scores'], 'model_params': sharedObject['p_model_params']}
+        return {'isTraining': sharedObject['isTraining'], 'model_name': modelName, 'model_scores': sharedObject['p_model_scores'], 'model_params': sharedObject['p_model_params']}
     else:
-        return {'model_name': modelName, 'model_scores': sharedObject['model_scores'], 'model_params': sharedObject['model_params']}
+        return {'isTraining': sharedObject['isTraining'],'model_name': modelName, 'model_scores': sharedObject['u_model_scores'], 'model_params': sharedObject['u_model_params']}
 
 
 @app.route('/predict', methods=['POST'])
@@ -77,13 +78,13 @@ def train_model():
         nbr_old = request.json['nbrOld']
         test_ratio = request.json['testRatio']
 
-        job = {'type': 'TRAIN', 'jobID': jobId, 'trainType': 'params', 'optimizeK': optimize_k, 'minK': min_k, 'max_k': max_k,
+        job = {'type': 'TRAIN', 'jobID': jobId, 'trainType': 'params', 'optimizeK': optimize_k, 'minK': min_k, 'maxK': max_k,
          'nbrYoung': nbr_young, 'nbrOld': nbr_old, 'test_ratio': test_ratio}
 
         jobQueue.put(job)
         return {'jobDone': False, 'jobId': jobId}
     
-    return {'jobDone': False, 'jobID': job_id}
+    return {'jobDone': False, 'jobID': -1}
 
 
 @app.route('/jobinfo', methods=['GET'])
