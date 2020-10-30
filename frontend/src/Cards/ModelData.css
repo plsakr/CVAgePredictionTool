@@ -9,3 +9,7 @@
 .longText {
   word-wrap: normal;
 }
+
+table {
+  width: 100%;
+}

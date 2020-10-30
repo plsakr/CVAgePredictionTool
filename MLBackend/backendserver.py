@@ -15,9 +15,10 @@ if __name__ == '__main__':
     manager = multiprocessing.Manager()
     jobQueue = manager.Queue() # create a thread-safe queue for background ML tasks # create a thread-safe queue for background ML tasks
     sharedObject = manager.dict()
+    sharedObject['jobProgress'] = manager.dict()
+    sharedObject['jobResults'] = manager.dict()
 else:
     print('__name__ is', __name__)
-    # import trainlbp_knn # import ml backend in the background! => YOU CANNOT USE ANY OF ITS METHODS/OBJECTS EXCEPT IN background_worker()
 
 def get_next_job_id():
     global validJobID, sharedObject
@@ -26,43 +27,62 @@ def get_next_job_id():
 
     if 'jobProgress' in sharedObject:
         sharedObject['jobProgress'][currentId] = 0.0
+        sharedObject['jobResults'][currentId] = manager.dict()
     else:
         sharedObject['jobProgress'] = {currentId: 0.0}
+        sharedObject['jobResults'] ={currentId: {}}
     print(sharedObject)
     return currentId
 
 
 @app.route('/info', methods=['GET'])
 def get_model_info():
+    global sharedObject
     print('get_model_info() called!')
-    get_next_job_id()
-    return {'training': 200, 'testing': 50, 'tPrecision': 0.9, 'tRecall': 0.89, 'fPrecision': 0.9, 'fRecall': 0.89}
+    modelName = sharedObject['model_name']
+
+    if modelName == 'pretrained_knn_model':
+        return {'model_name': modelName, 'model_scores': sharedObject['p_model_scores'], 'model_params': sharedObject['p_model_params']}
+    else:
+        return {'model_name': modelName, 'model_scores': sharedObject['model_scores'], 'model_params': sharedObject['model_params']}
 
 
 @app.route('/predict', methods=['POST'])
 def predict_age():
+    global jobQueue
     print('predict_age() called!')
-    # TODO: get needed arguments from request
-    res = {'faceDetected': True}
+    
+    jobId = get_next_job_id()
+    job = {'type': 'PREDICT','jobID': jobId, 'image': request.json['image']}
 
-    # TODO: add actual prediction
-    res['prediction'] = 'old'
-    return res
+    jobQueue.put(job)
+    return {'jobDone': False, 'jobId': jobId}
 
 
 @app.route('/train', methods=['POST'])
 def train_model():
-    # get actual train type
-    # if reset
-    # reset
-    return {'jobDone': True}
-    # if params
-    # get params and create job with id
-    job_id = get_next_job_id()
-    return {'jobDone': False, 'jobID': job_id}
-    #if dataset
-    # get params and create job with id
-    job_id = get_next_job_id()
+    global jobQueue
+
+    print('train_model() called!')
+    jobId = get_next_job_id()
+    if request.json['isReset']:
+        pass #TODO reset the model
+    elif request.json['isCustom']:
+        pass # TODO train from custom data
+    else:
+        optimize_k = request.json['optimizeK']
+        min_k = request.json['minK']
+        max_k = request.json['maxK']
+        nbr_young = request.json['nbrYoung']
+        nbr_old = request.json['nbrOld']
+        test_ratio = request.json['testRatio']
+
+        job = {'type': 'TRAIN', 'jobID': jobId, 'trainType': 'params', 'optimizeK': optimize_k, 'minK': min_k, 'max_k': max_k,
+         'nbrYoung': nbr_young, 'nbrOld': nbr_old, 'test_ratio': test_ratio}
+
+        jobQueue.put(job)
+        return {'jobDone': False, 'jobId': jobId}
+    
     return {'jobDone': False, 'jobID': job_id}
 
 
@@ -70,22 +90,27 @@ def train_model():
 def get_job_info():
     global jobQueue, sharedObject
     print('job_info() called!')
-    jobId = request.args.get('jobId', default=None)
+    jobId = int(request.args.get('jobId', default=None))
     print('jobId', jobId)
     if jobId == None:
         print('A bad request was caught!')
         return Response(status=400)
     
     if 'jobProgress' in sharedObject and jobId in sharedObject['jobProgress']:
-        progress = sharedObject['jobProgress'][jobId]
-        return {'jobDone': progress == 1.0, 'jobProgress': progress}
+        progress = sharedObject['jobProgress'].copy()[jobId]
+        results = sharedObject['jobResults'][jobId].copy()
+        print(sharedObject)
+        return {'jobDone': progress == 1.0, 'jobProgress': progress, 'jobResults': results}
     else:
-        print('received an invalid job id!')
+        print('received an invalid job id!', jobId)
         return Response({'jobId': jobId}, status=400)
 
 
 def background_worker(jobQueue, sharedObject):
     # initialize ml backend
+    print('Initializing background worker')
+    import mlbackend
+    sharedObject.update(mlbackend.initializeML())
     print("background worker started!")
     while True:
         print('looping!')
@@ -93,7 +118,7 @@ def background_worker(jobQueue, sharedObject):
             pass
         nextJob = jobQueue.get(block=True) # wait here until a job is available to complete
         print('Found a job! Executing now')
-        
+        mlbackend.performJob(nextJob, sharedObject)
 
         
 

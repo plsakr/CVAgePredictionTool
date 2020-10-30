@@ -4,7 +4,9 @@ import { Button } from "@material-ui/core";
 import "./TrainingCard.css";
 
 function TrainingCard(props) {
-  const [isReset, setReset] = useState(false);
+  const [isReset, setReset] = useState(
+    props.modelName == "pretrained_knn_model"
+  );
 
   const handleReset = (e) => {
     console.log("Resetting model!");

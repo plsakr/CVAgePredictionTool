@@ -11,6 +11,7 @@
     "file-selector": "^0.2.2",
     "react": "^16.14.0",
     "react-bootstrap": "^1.4.0",
+    "react-bootstrap-range-slider": "^2.0.2",
     "react-dom": "^16.14.0",
     "react-dropzone": "^11.2.0",
     "react-scripts": "^3.4.4"

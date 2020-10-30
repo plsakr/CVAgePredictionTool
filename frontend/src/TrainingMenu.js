@@ -13,7 +13,16 @@ class TrainingMenu extends React.Component {
   constructor(props) {
     super(props);
     this.onTrain = props.onTrain;
-    this.state = { isOpen: false, tabValue: "0" };
+    this.state = {
+      isOpen: false,
+      tabValue: "0",
+      minK: 1,
+      maxK: 100,
+      OldPicsNbr: 1,
+      YoungPicsNbr: 1,
+      testingRatio: 0.2,
+      isChecked: false,
+    };
   }
 
   // allow others to open me
@@ -24,13 +33,54 @@ class TrainingMenu extends React.Component {
   // train button clicked. gather all data, tell the app what happened, and close the dialog
   handleOnTrain() {
     console.log("dialog train button pressed");
+
+    if (this.state.tabValue === "0") {
+      const minK = this.state.minK;
+      const maxK = this.state.maxK;
+      const isChecked = this.state.isChecked;
+      const oldPicsNbr = this.state.oldPicsNbr;
+      const youngPicsNbr = this.state.youngPicsNbr;
+      const testingRatio = this.state.testingRatio;
+
+      if (isChecked){
+        if (maxK > minK) {
+          const req  
+
+        } else {
+          console.log("maxK cannot be larger than minK");
+        }
+      }
+      
+    } else {
+      // TODO
+    }
+
     this.setState({ isOpen: false });
     this.onTrain(); // this method should take all the needed data!
   }
 
   // close button clicked. close dialog and do nothing
   handleOnClose() {
-    this.setState({ isOpen: false });
+    this.setState({
+      isOpen: false,
+      isChecked: false,
+      tabValue: "0",
+      minK: 0,
+      maxK: 100,
+      oldPicsNbr: 1,
+      youngPicsNbr: 1,
+      testingRatio: 0.2,
+    });
+  }
+
+  handleFormChange(e, isCheckbox = false) {
+    const name = isCheckbox ? "isChecked" : e.target.name;
+    const value = isCheckbox ? e.target.checked : Number(e.target.value);
+    console.log(name);
+    console.log(value);
+    this.setState({
+      [name]: value,
+    });
   }
 
   render() {
@@ -44,9 +94,20 @@ class TrainingMenu extends React.Component {
     var currentState;
 
     if (this.state.tabValue == "0") {
-      currentState = <Params />;
+      currentState = (
+        <Params
+          handleChange={this.handleFormChange.bind(this)}
+          k={this.state.minK}
+          maxK={this.state.maxK}
+          oldPics={this.state.OldPicsNbr}
+          youngPics={this.state.YoungPicsNbr}
+          testRatio={this.state.testingRatio}
+        />
+      );
     } else {
-      currentState = <Dataset />;
+      currentState = (
+        <Dataset handleChange={this.handleFormChange.bind(this)} />
+      );
     }
 
     return (
