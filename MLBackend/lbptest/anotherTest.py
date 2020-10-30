@@ -3,12 +3,13 @@ import cv2
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import json
 from tqdm import tqdm
 import glob
 import pickle
+import base64
 
 from skimage import feature
-from sklearn import svm
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -17,8 +18,6 @@ from sklearn import model_selection
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import classification_report, accuracy_score, recall_score, precision_score
 
-
-path = '../dataset/male' ## TODO: Change this to the path of your dataset. 
 
 # Read the input image
 def locateFace(img):
@@ -60,15 +59,30 @@ class LocalBinaryPatterns:
 		return hist
 
 
-def train(X, y, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=0, max_range_k=0 ):
+def train(X_young,y_young, X_old, y_old, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=1, max_range_k=100 ):
 
-    X0_train, X_test, y0_train, y_test = train_test_split(X,y,test_size=testing_size, random_state=7)
+    #X0_train, X_test, y0_train, y_test = train_test_eq_split(X, y, n_per_class=2500, random_state=123)
+
+    X0_young_train, X0_young_test, y0_young_train, y0_young_test= train_test_split(X_young, y_young, test_size=0.2, random_state=7)
+    X0_old_train, X0_old_test, y0_old_train, y0_old_test= train_test_split(X_old, y_old, test_size=0.2, random_state=7)
+    X0_train = X0_young_train.append(X0_old_train)
+    y0_train = y0_young_train.append(y0_old_train)
     
+    X_test = X0_young_test.append(X0_old_test)
+    y_test = y0_young_test.append(y0_old_test)
+
+    df_train=(pd.concat([X0_train, y0_train], axis=1)).sample(frac=1).reset_index(drop=True)
+    X0_train = df_train.drop(['age_new'], axis=1)
+    y0_train = df_train['age_new']
+
     eval_score_list = []
+
     if optimal_k and min_range_k>0 and max_range_k>min_range_k:
         k_range= range(min_range_k, max_range_k)
-    else:
+    elif optimal_k:
         k_range=range(1,50)
+    else:
+        k_range=[min_range_k]
     
 
     scores = {}
@@ -76,16 +90,109 @@ def train(X, y, k_cross_validation_ratio, testing_size, optimal_k=True, min_rang
 
     #finding the optimal nb of neighbors
     for k in tqdm(k_range):
-        knn = KNeighborsClassifier(n_neighbors=k)
+        knn = KNeighborsClassifier(n_neighbors=k, weights = 'distance' ,algorithm='ball_tree', p=3)
         knn.fit(X0_train, y0_train)
         y_pred = knn.predict(X_test)
         scores[k] = metrics.accuracy_score(y_test, y_pred)
         scores_list.append(metrics.accuracy_score(y_test, y_pred))
     
     k_optimal = scores_list.index(max(scores_list))
-    model = KNeighborsClassifier(n_neighbors= k_optimal)
-
+    model = KNeighborsClassifier(n_neighbors= k_optimal, weights = 'distance', algorithm='ball_tree', p=3)
+    #model.fit(X0_train, y0_train)
     accuracys=[]
+
+    nb_splits=10
+    skf = StratifiedKFold(n_splits=10, random_state=None)
+    skf.get_n_splits(X0_train, y0_train)
+
+    old_train_X = []
+    old_train_y= []
+    old_eval_x = []
+    old_eval_y= []
+    young_train_X = []
+    young_train_y=[]
+    young_eval_x = []
+    young_eval_y =[]
+    for train_old_index, test_old_index in skf.split(X0_old_train, y0_old_train):
+        X_train_old, X_eval_old = pd.DataFrame(X0_old_train).iloc[train_old_index], pd.DataFrame(X0_old_train).iloc[test_old_index]
+        y_train_old, y_eval_old = pd.DataFrame(y0_old_train).iloc[train_old_index], pd.DataFrame(y0_old_train).iloc[test_old_index]
+
+        old_train_X.append(X_train_old)
+        old_train_y.append(y_train_old)
+        old_eval_x.append(X_eval_old)
+        old_eval_y.append(y_eval_old)
+    for train_young_index, test_young_index in skf.split(X0_young_train, y0_young_train):
+        X_train_young, X_eval_young = pd.DataFrame(X0_young_train).iloc[train_young_index], pd.DataFrame(X0_young_train).iloc[test_young_index]
+        y_train_young, y_eval_young = pd.DataFrame(y0_young_train).iloc[train_young_index], pd.DataFrame(y0_young_train).iloc[test_young_index]
+        young_train_X.append(X_train_young)
+        young_train_y.append(y_train_young)
+        young_eval_x.append(X_eval_young)
+        young_eval_y.append(y_eval_young)
+
+    
+    for i in range(nb_splits):
+        X_train = pd.DataFrame(old_train_X[i]).append(pd.DataFrame(young_train_X[i]))
+        X_eval = pd.DataFrame(old_eval_x[i]).append(pd.DataFrame(young_eval_x[i]))
+        y_train = pd.DataFrame(old_train_y[i]).append(pd.DataFrame(young_train_y[i]))
+        y_eval = pd.DataFrame(old_eval_y[i]).append(pd.DataFrame(young_eval_y[i]))
+
+
+
+        df0_train=(pd.concat([X_train, y_train], axis=1)).sample(frac=1).reset_index(drop=True)
+        X_train = df0_train.drop(['age_new'], axis=1)
+        y_train = df0_train['age_new']
+
+        model.fit(X_train, y_train.values.ravel())
+        predictions = model.predict(X_eval)
+        score = accuracy_score(predictions, y_eval)
+        accuracys.append(score)
+        print("Validation batch score: {}".format(score))
+
+    eval_accuracy = np.mean(accuracys)
+
+    #save the pretrained model:
+    model.fit(X0_train, y0_train)
+    model_name='pretrained_knn_model'
+    pickle.dump(model, open(model_name, 'wb'))   
+
+    return eval_accuracy, model, X0_train, y0_train, X_test, y_test, k_optimal
+
+
+def train2(X,y, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=1, max_range_k=100 ):
+    
+
+
+    X0_train, X_test, y0_train, y_test= train_test_split(X, y, test_size=0.2, random_state=7)
+    
+    eval_score_list = []
+
+    if optimal_k and min_range_k>0 and max_range_k>min_range_k:
+        k_range= range(min_range_k, max_range_k)
+    elif optimal_k:
+        k_range=range(1,50)
+    else:
+        k_range=[min_range_k]
+    
+
+    scores = {}
+    scores_list = []
+
+    #finding the optimal nb of neighbors
+    for k in tqdm(k_range):
+        knn = KNeighborsClassifier(n_neighbors=k, weights = 'distance' ,algorithm='ball_tree', p=3)
+        knn.fit(X0_train, y0_train)
+        y_pred = knn.predict(X_test)
+        scores[k] = metrics.accuracy_score(y_test, y_pred)
+        scores_list.append(metrics.accuracy_score(y_test, y_pred))
+    
+    k_optimal = scores_list.index(max(scores_list))
+    model = KNeighborsClassifier(n_neighbors= k_optimal, weights = 'distance', algorithm='ball_tree', p=3)
+    #model.fit(X0_train, y0_train)
+    accuracys=[]
+
+    nb_splits=10
+    skf = StratifiedKFold(n_splits=10, random_state=None)
+    skf.get_n_splits(X0_train, y0_train)
 
     skf = StratifiedKFold(n_splits=10, random_state=None)
     skf.get_n_splits(X0_train, y0_train)
@@ -100,16 +207,13 @@ def train(X, y, k_cross_validation_ratio, testing_size, optimal_k=True, min_rang
         score = accuracy_score(predictions, y_eval)
         accuracys.append(score)
         print("Validation batch score: {}".format(score))
-
     eval_accuracy = np.mean(accuracys)
-
     #save the pretrained model:
     model.fit(X0_train, y0_train)
     model_name='pretrained_knn_model'
-    pickle.dump(model, open(model_name, 'wb'))
+    pickle.dump(model, open(model_name, 'wb'))   
 
-    return eval_accuracy, model, X0_train, y0_train, X_test, y_test
-
+    return eval_accuracy, model, X0_train, y0_train, X_test, y_test, k_optimal
 
 def loadPreTrained(modelName):
     if os.path.exists(modelName):
@@ -123,20 +227,16 @@ def test(X_train, y_train, X_test, y_test,modelName):
     model = loadPreTrained(modelName)
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
-    print("Predictions shape: {}".format(y_pred.shape))
-    print("Y_test shape: {}".format(y_test))
+
     classification_rep = classification_report(y_test, y_pred, output_dict=True)
     test_score = metrics.accuracy_score(y_test, y_pred)
     recall_score = metrics.recall_score(y_test, y_pred)
-    precision_score = metrics.precision_score(y_test, y_pred)
-    print(type(classification_rep))
-
-    return  test_score, classification_rep
+    return test_score, classification_rep
 
 
-def preprocessingData(file_path=path):
+def preprocessingData(file_path):
     images = []
-    for x, y, z in os.walk(path):
+    for x, y, z in os.walk(file_path):
         for name in tqdm(z):
             images.append(os.path.join(x, name).replace('\\','/'))
     return images 
@@ -167,36 +267,46 @@ def dataframeCreation(images):
 
             else:
                 count= count+1
-                print("Error! No face was detected. Please try again with a clearer picture")
-                #to remove the remove method    
-                os.remove(i)
+                raise ValueError('Error! No face was detected. Please try again with a clearer picture')
+   
+                
 
         print("Count: empty: {}".format(count))
-        # number of null values in our df. Should always be 0
-        lbp_df[2].isna().sum()
-        corrM = lbp_df.corr()
-        #print(corrM)
         # the age groups we decide we call 'young'
         young = ['age_10_14', 'age_15_19','age_20_24']
         # in this column, true means young, false means old
         lbp_df['age_new'] = lbp_df['ageRange'].isin(young)
         lbp_df.to_csv('./lbp.csv')
 
-    
-    # randomize the df so that old and young are mixed
-    random_df = lbp_df.sample(frac=1).reset_index(drop=True)
-    random_df.head()
-    X = random_df.drop(['ageRange','age_new'], axis=1)
-    y = random_df['age_new']
-    print(lbp_df)
+    df_young = lbp_df[lbp_df.age_new == True]
+    df_old = lbp_df[lbp_df.age_new == False]
+ 
+    # Split the dataframe into old and young for balanced training and validation
+    X_young_df = df_young.drop(['ageRange','age_new'], axis=1)
+    y_young_df = df_young['age_new']
+    X_old_df = df_old.drop(['ageRange','age_new'], axis=1)
+    y_old_df = df_old['age_new']
 
-    return X,y, count
+    return X_young_df, y_young_df ,X_old_df, y_old_df, count
+
+def getRandomSamples(nbrYoung, nbrOld):
+    if os.path.exists('./lbp.csv'):
+        full_df = pd.read_csv('./lbp.csv', index_col=0)
+
+        youngs = full_df.loc[full_df['age_new'] == True]
+        olds = full_df.loc[full_df['age_new'] == False]
+
+        random_youngs = youngs.sample(n=nbrYoung).reset_index(drop=True)
+        random_olds = olds.sample(n=nbrOld).reset_index(drop=True)
+
+        full_random = random_youngs.append(random_olds)
+
+        X = full_random.drop(['ageRange','age_new'], axis=1)
+        y = full_random['age_new']
+        return X,y
 
 
-def predict(imagePath, model):
-
-    #images = preprocessingData(imagePath)
-    #image = cv2.imread(imagePath)
+def createInputsFromImagePaths(imagePaths):
     lbp_df = pd.DataFrame()
     # the parameters of the LBP algo
     # higher = more time required
@@ -204,7 +314,7 @@ def predict(imagePath, model):
     radius = 4
     images_crop = []
     count=0
-    for i in tqdm(imagePath):
+    for i in tqdm(imagePaths):
         if ".DS_Store" in i:
             continue  
         img = cv2.imread(i)
@@ -219,14 +329,39 @@ def predict(imagePath, model):
             count= count+1
             print("Error! No face was detected. Please try again with a clearer picture")
             #to remove the remove method    
-            os.remove(i)
+
        
     print("Count: empty: {}".format(count))
+    return lbp_df
 
-
-    print(lbp_df)
+def createInputFromBase64(base64Image):
     
-    predictions = model.predict(lbp_df)
+    encoded_data = base64Image.split(',')[1]
+    nparr = np.fromstring(base64.b64decode(encoded_data), np.uint8)
+
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+
+    lbp_df = pd.DataFrame()
+    # the parameters of the LBP algo
+    # higher = more time required
+    sample_points = 16
+    radius = 4
+    images_crop = []
+    faces, x,y,w,h = locateFace(img)
+    if not faces == ():
+        crop_img = img[y:y+h, x:x+w]
+        lbp = LocalBinaryPatterns(sample_points, radius).describe(cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY))
+        row = dict(zip(range(0, len(lbp)), lbp))
+        lbp_df = lbp_df.append(row, ignore_index=True)
+
+    else:
+        print("Error! No face was detected. Please try again with a clearer picture")
+        
+    return lbp_df
+
+def predict(X, model):
+    predictions = model.predict(X)
     labels = list()
     lbl = []
     for predict in predictions:
@@ -240,35 +375,90 @@ def predict(imagePath, model):
         
     return labels, predictions
 
+def predictFromPath(imagePath, model):
+
+    X = createInputsFromImagePaths(imagePath)
+    # print(lbp_df)
+    return predict(X, model)
 
 
-images = preprocessingData(path)
-X,y, _ =dataframeCreation(images)
-# model = loadPreTrained(modelName="pretrained_knn_model")
-eval_accuracy, model, X_train, y_train, X_test, y_test = train(X, y, k_cross_validation_ratio=5, testing_size=0.2, optimal_k=True, min_range_k= 1, max_range_k=100)
-X0_train, X_test, y0_train, y_test = train_test_split(X,y,test_size=0.2, random_state=7)
-test_score, conf_rep = test(X0_train, y0_train,X_test, y_test, modelName="pretrained_knn_model")
-#print("Evaluation Score: {}".format(eval_accuracy))
-print("Test Score: {}".format(test_score))
-print(conf_rep)
-
-# model.fit(X0_train, y0_train)
-#model = loadPreTrained("pretrained_knn_model")
-testPath = '../dataset/female/age_15_19/01445.jpg'
-testPath2 = '../dataset/female/age_60_94/16883.jpg'
-patht = [testPath, testPath2]
-label , pred=predict(patht, model)
-print(pred)
-#print("Test label young: {}".format(label))
+def getCurrentModel():
+    with open('./config.json') as f:
+        sharedObject = json.load(f) 
+    return loadPreTrained(sharedObject['model_name'])
 
 
 
+def predictFromBase64(base64Image):
+    model = getCurrentModel()
+    X = createInputFromBase64(base64Image)
+
+    return predict(X, model)
 
 
 
-    
+def initializeML(initial_dataset_path = './dataset'):
+    sharedObject = {}
+    model_name = 'pretrained_knn_model'
+
+    if os.path.exists('./config.json') and os.path.exists(model_name):
+        print('Found previously saved config!')
+        with open('./config.json') as f:
+            sharedObject = json.load(f)
+    else:
+        # load pre-packages model, and calculate its initial scores based on the dataset
+        print('No config found, assuming first launch!')
+        
+        images = preprocessingData(initial_dataset_path)
+        X_young,y_young, X_old, y_old, _ =dataframeCreation(images)
+        eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train(X_young,y_young, X_old, y_old, k_cross_validation_ratio=5, testing_size=0.2, optimal_k=True, min_range_k= 1, max_range_k=100)
+        test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName=model_name)
+
+        # setup the initial config
+        sharedObject['model_name'] = model_name
+        sharedObject['p_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+        sharedObject['p_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
+
+        with open('./config.json', 'w') as f:
+            json.dump(sharedObject, f)
+
+    return sharedObject
+
+def performJob(job, sharedObject):
+    jobType = job['type']
+    print(type(sharedObject))
+    if jobType == 'PREDICT':
+        image = job['image']
+        labels, _ = predictFromBase64(image)
+        print('prediction finished', labels)
+        sharedObject['jobProgress'][job['jobID']] = 1.0
+        sharedObject['jobResults'][job['jobID']] = {'label': labels[0]}
+    if jobType == 'TRAIN':
+        if job['trainType'] == 'params':
+            print("training new model based on our dataset")
+            X, y = getRandomSamples(job['nbrYoung'], job['nbrOld'])
+
+            eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train2(X, y, k_cross_validation_ratio=5, testing_size=0.2, optimal_k=True, min_range_k= 1, max_range_k=100)
+            test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName=model_name)
 
 
+path = "../dataset"
 
+def predictFromMLScriptOnly(path):
+    images = preprocessingData(path)
+    X_young_df, y_young_df ,X_old_df, y_old_df, _ =dataframeCreation(images)
+    #model = loadPreTrained(modelName="pretrained_knn_model")
+    eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train(X_young_df, y_young_df ,X_old_df, y_old_df, k_cross_validation_ratio=5, testing_size=0.2, optimal_k=True, min_range_k= 1, max_range_k=100)
 
-    
+    print(pd.DataFrame(y_train).apply(pd.value_counts))
+    test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName="pretrained_knn_model")
+    print("Test Score: {}".format(test_score))
+    print(conf_rep)
+
+    model.fit(X_train, y_train)
+    #model = loadPreTrained("pretrained_knn_model")
+    testPath = '../dataset/male/age_10_14/pic_0014.png'
+    testPath2 = "../dataset/male/age_50_54/pic_0028.png"
+    patht = [testPath, testPath2]
+    label , pred=predict(patht, model)
+    print(pred)
