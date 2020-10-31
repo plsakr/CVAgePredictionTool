@@ -119,6 +119,13 @@ class App extends React.Component {
             jobId={this.state.trainingId}
             onTrainDone={this.handleTrainDone.bind(this)}
           />
+          <div className="credits">
+            <img src="https://soe.lau.edu.lb/images/soe.png" />
+            <h4>IEA Project Fall 2020</h4>
+            <p>Peter Louis Sakr</p>
+            <p>Melissa Chehade</p>
+            <p>Samar Saleme</p>
+          </div>
         </div>
       );
     } else {

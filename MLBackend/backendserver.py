@@ -72,7 +72,23 @@ def train_model():
         jobQueue.put(job)
         return {'jobDone': False, 'jobId': jobId}
     elif request.json['isCustom']:
-        pass # TODO train from custom data
+        optimize_k = request.json['optimizeK']
+        min_k = request.json['minK']
+        if optimize_k:
+            max_k = request.json['maxK']
+        test_ratio = request.json['testRatio']
+        youngStrings = request.json['youngPics']
+        oldStrings = request.json['oldPics']
+
+        if optimize_k:
+            job = {'type': 'TRAIN', 'jobID': jobId, 'trainType': 'custom', 'optimizeK': optimize_k, 'minK': min_k, 'maxK': max_k,
+                'youngPics': youngStrings, 'oldPics': oldStrings, 'test_ratio': test_ratio}
+        else:
+            job = {'type': 'TRAIN', 'jobID': jobId, 'trainType': 'custom', 'optimizeK': optimize_k, 'minK': min_k,
+                'youngPics': youngStrings, 'oldPics': oldStrings, 'test_ratio': test_ratio}
+        jobQueue.put(job)
+        return {'jobDone': False, 'jobId': jobId}
+
     else:
         optimize_k = request.json['optimizeK']
         min_k = request.json['minK']
@@ -128,7 +144,7 @@ def background_worker(jobQueue, sharedObject):
         print('Found a job! Executing now')
         mlbackend.performJob(nextJob, sharedObject)      
 
-  
+
 # run the server
 if __name__ == '__main__':
     print('starting background jobs')

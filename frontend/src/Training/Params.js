@@ -9,19 +9,20 @@ import "./Params.css";
 export default class Params extends Component {
   constructor(props) {
     super(props);
+    this.isChecked = props.isChecked;
     this.k = props.k;
     this.maxK = props.maxK;
     this.oldPicsTrain = props.oldPics;
-    this.youngPicsTrain = props.oldPics;
+    this.youngPicsTrain = props.youngPics;
     this.testRatio = props.testRatio;
     this.propshandleChange = props.handleChange;
     this.state = {
-      isChecked: false,
-      minK: 1,
-      maxK: 100,
-      oldPicsNbr: 10,
-      youngPicsNbr: 10,
-      testingRatio: 0.2,
+      isChecked: this.isChecked,
+      minK: this.k,
+      maxK: this.maxK,
+      oldPicsNbr: this.oldPicsTrain,
+      youngPicsNbr: this.youngPicsTrain,
+      testingRatio: this.testRatio,
     };
   }
 
@@ -49,6 +50,7 @@ export default class Params extends Component {
               label="Optimize K"
               control={
                 <Checkbox
+                  checked={this.state.isChecked}
                   onChange={this.handleCheckbox.bind(this)}
                   color="primary"
                 />

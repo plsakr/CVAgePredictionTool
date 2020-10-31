@@ -16,7 +16,7 @@ function Classifier(props) {
   async function handlePredict(e) {
     console.log("sending prediction request!");
     console.log(image);
-    // TODO: send request by sending image, receive result later, show it somehow!
+
     let reader = new FileReader();
     let blob = await fetch(image).then((r) => r.blob());
     console.log(blob);
