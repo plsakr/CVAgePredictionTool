@@ -1,4 +1,5 @@
 from flask import Flask, redirect, url_for, request, Response
+from flask_cors import CORS
 import multiprocessing
 from queue import SimpleQueue
 
@@ -6,10 +7,10 @@ from queue import SimpleQueue
 
 
 app = Flask(__name__)
+CORS(app)
 
 validJobID = 0
 currentJobs = []
-
 if __name__ == '__main__':
     print('__name__ is', __name__, 'im supposed to be __main__')
     manager = multiprocessing.Manager()
@@ -18,6 +19,7 @@ if __name__ == '__main__':
     sharedObject['jobProgress'] = manager.dict()
     sharedObject['jobResults'] = manager.dict()
     sharedObject['isTraining'] = False
+    sharedObject['trainingId'] = -1
 else:
     print('__name__ is', __name__)
 
@@ -32,7 +34,6 @@ def get_next_job_id():
     else:
         sharedObject['jobProgress'] = {currentId: 0.0}
         sharedObject['jobResults'] ={currentId: {}}
-    print(sharedObject)
     return currentId
 
 
@@ -43,9 +44,9 @@ def get_model_info():
     modelName = sharedObject['model_name']
 
     if modelName == 'pretrained_knn_model':
-        return {'isTraining': sharedObject['isTraining'], 'model_name': modelName, 'model_scores': sharedObject['p_model_scores'], 'model_params': sharedObject['p_model_params']}
+        return {'isTraining': sharedObject['isTraining'], 'trainingId': sharedObject['trainingId'], 'model_name': modelName, 'model_scores': sharedObject['p_model_scores'], 'model_params': sharedObject['p_model_params']}
     else:
-        return {'isTraining': sharedObject['isTraining'],'model_name': modelName, 'model_scores': sharedObject['u_model_scores'], 'model_params': sharedObject['u_model_params']}
+        return {'isTraining': sharedObject['isTraining'], 'trainingId': sharedObject['trainingId'], 'model_name': modelName, 'model_scores': sharedObject['u_model_scores'], 'model_params': sharedObject['u_model_params']}
 
 
 @app.route('/predict', methods=['POST'])
@@ -67,19 +68,26 @@ def train_model():
     print('train_model() called!')
     jobId = get_next_job_id()
     if request.json['isReset']:
-        pass #TODO reset the model
+        job = {'type': 'TRAIN', 'trainType': 'reset', 'jobID': jobId}
+        jobQueue.put(job)
+        return {'jobDone': False, 'jobId': jobId}
     elif request.json['isCustom']:
         pass # TODO train from custom data
     else:
         optimize_k = request.json['optimizeK']
         min_k = request.json['minK']
-        max_k = request.json['maxK']
+        if optimize_k:
+            max_k = request.json['maxK']
         nbr_young = request.json['nbrYoung']
         nbr_old = request.json['nbrOld']
         test_ratio = request.json['testRatio']
 
-        job = {'type': 'TRAIN', 'jobID': jobId, 'trainType': 'params', 'optimizeK': optimize_k, 'minK': min_k, 'maxK': max_k,
-         'nbrYoung': nbr_young, 'nbrOld': nbr_old, 'test_ratio': test_ratio}
+        if optimize_k:
+            job = {'type': 'TRAIN', 'jobID': jobId, 'trainType': 'params', 'optimizeK': optimize_k, 'minK': min_k, 'maxK': max_k,
+                'nbrYoung': nbr_young, 'nbrOld': nbr_old, 'test_ratio': test_ratio}
+        else:
+            job = {'type': 'TRAIN', 'jobID': jobId, 'trainType': 'params', 'optimizeK': optimize_k, 'minK': min_k,
+                'nbrYoung': nbr_young, 'nbrOld': nbr_old, 'test_ratio': test_ratio}
 
         jobQueue.put(job)
         return {'jobDone': False, 'jobId': jobId}
@@ -100,7 +108,6 @@ def get_job_info():
     if 'jobProgress' in sharedObject and jobId in sharedObject['jobProgress']:
         progress = sharedObject['jobProgress'].copy()[jobId]
         results = sharedObject['jobResults'][jobId].copy()
-        print(sharedObject)
         return {'jobDone': progress == 1.0, 'jobProgress': progress, 'jobResults': results}
     else:
         print('received an invalid job id!', jobId)

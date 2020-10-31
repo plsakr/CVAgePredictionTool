@@ -90,15 +90,13 @@ class TrainingMenu extends React.Component {
           res.json().then((body) => {
             const jobId = body.jobId;
 
+            console.log(`MY TRAINING ID IS ${jobId}`);
             this.setState({ isOpen: false });
             this.onTrain(jobId);
           });
         }
       });
     }
-
-    this.setState({ isOpen: false });
-    this.onTrain(); // this method should take all the needed data!
   }
 
   // close button clicked. close dialog and do nothing

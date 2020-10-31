@@ -342,11 +342,18 @@ def performJob(job, sharedObject):
     if jobType == 'TRAIN':
         if job['trainType'] == 'params':
             sharedObject['isTraining'] = True
+            sharedObject['trainingId'] = job['jobID']
             print("training new model based on our dataset")
             model_name="user_knn_model"
             X, y = getRandomSamples(job['nbrYoung'], job['nbrOld'])
 
-            eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train(X, y, k_cross_validation_ratio=5, testing_size=job['test_ratio'], optimal_k=job['optimizeK'], min_range_k= job['minK'], max_range_k=job['maxK'],model_name=model_name, progressObject=sharedObject, jobId=job['jobID'])
+            optimize = job['optimizeK']
+            if optimize:
+                maxK = job['maxK']
+            else:
+                maxK = 100
+
+            eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train(X, y, k_cross_validation_ratio=5, testing_size=job['test_ratio'], optimal_k=job['optimizeK'], min_range_k= job['minK'], max_range_k=maxK,model_name=model_name, progressObject=sharedObject, jobId=job['jobID'])
             test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName=model_name)
 
             sharedObject['model_name'] = model_name
@@ -364,6 +371,19 @@ def performJob(job, sharedObject):
             sharedObject['jobProgress'][job['jobID']] = 1.0
             sharedObject['isTraining'] = False
             print('finishedTraining!')
+
+        elif job['trainType'] == 'reset':
+            print('Resetting model to pretrained!')
+            model_name='pretrained_knn_model'
+            sharedObject['model_name'] = model_name
+            with open('./config.json', 'r+') as f:
+                config = json.load(f)
+                f.seek(0)
+                config['model_name'] = model_name
+                json.dump(config, f)
+                f.truncate()
+            sharedObject['jobProgress'][job['jobID']] = 1.0
+
 
 
     

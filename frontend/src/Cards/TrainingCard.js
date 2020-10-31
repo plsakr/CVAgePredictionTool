@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Card from "@material-ui/core/Card";
 import { Button } from "@material-ui/core";
 import "./TrainingCard.css";
@@ -13,6 +13,10 @@ function TrainingCard(props) {
     setReset(true);
     props.onReset(e);
   };
+
+  useEffect(() => {
+    setReset(props.modelName == "pretrained_knn_model");
+  }, [props.modelName]);
 
   return (
     <Card className="cardClass" variant="outlined">

@@ -37,6 +37,7 @@ class App extends React.Component {
             modelScores: body.model_scores,
             modelParams: body.model_params,
             isTraining: body.isTraining,
+            trainingId: body.trainingId,
           });
         });
       }
@@ -52,16 +53,41 @@ class App extends React.Component {
 
   handleResetButton(e) {
     console.log("HANDLING MODEL RESET!");
+    var req = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        isReset: true,
+      }),
+    };
+    fetch(`${backend}/train`, req).then((res) => {
+      if (!res.ok) {
+        console.log("Could not reset model!");
+      } else {
+        res.json().then((body) => {
+          const jobId = body.jobId;
+
+          setTimeout(() => {
+            fetch(`${backend}/jobinfo?jobId=${jobId}`).then((resetRes) => {
+              if (resetRes.ok) {
+                this.componentDidMount();
+              }
+            });
+          }, 200);
+        });
+      }
+    });
   }
 
   handleTrainNewModel(jobId) {
-    console.log("HANDLING NEW MODEL CREATION!");
+    console.log(`HANDLING NEW MODEL CREATION! JOBID ${jobId}`);
     this.setState({ isTraining: true, trainingId: jobId });
   }
 
   handleTrainDone() {
     console.log("Received train finished!");
     this.setState({ isTraining: false, trainingId: -1 });
+    this.componentDidMount();
   }
 
   render() {
@@ -70,6 +96,7 @@ class App extends React.Component {
         <div className="App">
           <Classifier onPredict={this.handlePredict.bind(this)} />
           <ModelData
+            modelName={this.state.modelName}
             k={this.state.modelParams.K}
             trainingInstances={this.state.modelParams.train_nbr}
             testingInstances={this.state.modelParams.test_nbr}
@@ -90,6 +117,7 @@ class App extends React.Component {
           <TrainingLoad
             isTraining={this.state.isTraining}
             jobId={this.state.trainingId}
+            onTrainDone={this.handleTrainDone.bind(this)}
           />
         </div>
       );
