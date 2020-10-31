@@ -126,15 +126,9 @@ def background_worker(jobQueue, sharedObject):
             pass
         nextJob = jobQueue.get(block=True) # wait here until a job is available to complete
         print('Found a job! Executing now')
-        mlbackend.performJob(nextJob, sharedObject)
+        mlbackend.performJob(nextJob, sharedObject)      
 
-        
-
-
-        
-
-        
-
+  
 # run the server
 if __name__ == '__main__':
     print('starting background jobs')
