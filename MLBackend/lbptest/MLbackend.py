@@ -10,6 +10,7 @@ import pickle
 import base64
 
 from skimage import feature
+import warnings
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -59,12 +60,12 @@ class LocalBinaryPatterns:
 		return hist
 
 
-def train(X_young,y_young, X_old, y_old, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=1, max_range_k=100 ):
+def train(X_young,y_young, X_old, y_old, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=1, max_range_k=100, progressObject=None, jobId=-1, model_name="pretrained_knn_model"):
 
     #X0_train, X_test, y0_train, y_test = train_test_eq_split(X, y, n_per_class=2500, random_state=123)
 
-    X0_young_train, X0_young_test, y0_young_train, y0_young_test= train_test_split(X_young, y_young, test_size=0.2, random_state=7)
-    X0_old_train, X0_old_test, y0_old_train, y0_old_test= train_test_split(X_old, y_old, test_size=0.2, random_state=7)
+    X0_young_train, X0_young_test, y0_young_train, y0_young_test= train_test_split(X_young, y_young, test_size=testing_size, random_state=7)
+    X0_old_train, X0_old_test, y0_old_train, y0_old_test= train_test_split(X_old, y_old, test_size=testing_size, random_state=7)
     X0_train = X0_young_train.append(X0_old_train)
     y0_train = y0_young_train.append(y0_old_train)
     
@@ -74,13 +75,17 @@ def train(X_young,y_young, X_old, y_old, k_cross_validation_ratio, testing_size,
     df_train=(pd.concat([X0_train, y0_train], axis=1)).sample(frac=1).reset_index(drop=True)
     X0_train = df_train.drop(['age_new'], axis=1)
     y0_train = df_train['age_new']
+    
 
+    if(np.abs(pd.DataFrame(X0_young_train).ndim - pd.DataFrame(X0_old_train).ndim) >2 ):
+        raise ValueError('Error! Biased Training dataset!')
+    
     eval_score_list = []
 
     if optimal_k and min_range_k>0 and max_range_k>min_range_k:
-        k_range= range(min_range_k, max_range_k)
+        k_range= range(min_range_k, min(max_range_k, X0_train.shape[0]))
     elif optimal_k:
-        k_range=range(1,50)
+        k_range=range(1,min(50, X0_train.shape[0]))
     else:
         k_range=[min_range_k]
     
@@ -90,15 +95,17 @@ def train(X_young,y_young, X_old, y_old, k_cross_validation_ratio, testing_size,
 
     #finding the optimal nb of neighbors
     for k in tqdm(k_range):
-        knn = KNeighborsClassifier(n_neighbors=k, weights = 'distance' ,algorithm='ball_tree', p=3)
+        knn = KNeighborsClassifier(n_neighbors=k, weights = 'distance',algorithm='ball_tree', p=3)
         knn.fit(X0_train, y0_train)
         y_pred = knn.predict(X_test)
         scores[k] = metrics.accuracy_score(y_test, y_pred)
         scores_list.append(metrics.accuracy_score(y_test, y_pred))
+        if progressObject != None:
+            progressObject['jobProgress'][jobId] = min((k_range.index(k)+1.0)/len(k_range), 0.99)
     
-    k_optimal = scores_list.index(max(scores_list))
+    k_optimal = scores_list.index(max(scores_list))+min_range_k
     model = KNeighborsClassifier(n_neighbors= k_optimal, weights = 'distance', algorithm='ball_tree', p=3)
-    #model.fit(X0_train, y0_train)
+    
     accuracys=[]
 
     nb_splits=10
@@ -140,7 +147,7 @@ def train(X_young,y_young, X_old, y_old, k_cross_validation_ratio, testing_size,
 
         df0_train=(pd.concat([X_train, y_train], axis=1)).sample(frac=1).reset_index(drop=True)
         X_train = df0_train.drop(['age_new'], axis=1)
-        y_train = df0_train['age_new']
+        y_train = df0_train['age_new'] 
 
         model.fit(X_train, y_train.values.ravel())
         predictions = model.predict(X_eval)
@@ -152,41 +159,57 @@ def train(X_young,y_young, X_old, y_old, k_cross_validation_ratio, testing_size,
 
     #save the pretrained model:
     model.fit(X0_train, y0_train)
-    model_name='pretrained_knn_model'
-    pickle.dump(model, open(model_name, 'wb'))   
+    pickle.dump(model, open(model_name, 'wb'))
 
     return eval_accuracy, model, X0_train, y0_train, X_test, y_test, k_optimal
 
-
-def train2(X,y, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=1, max_range_k=100 ):
+def train2(X,y, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=1, max_range_k=100, progressObject=None, jobId=-1, model_name="pretrained_knn_model"):
     
 
 
     X0_train, X_test, y0_train, y_test= train_test_split(X, y, test_size=0.2, random_state=7)
+
+    count_young = 0
+    count_old = 0
+    for i in y0_train:
+        if y0_train[i]:
+            count_young = count_young+1
+        else:
+            count_old = count_old+1
+
+    if (np.abs(count_young- count_old)>2):
+        warnings.warn('Error! Biased Training dataset!')
+    
     
     eval_score_list = []
 
     if optimal_k and min_range_k>0 and max_range_k>min_range_k:
-        k_range= range(min_range_k, max_range_k)
+        k_range= range(min_range_k, min(max_range_k, X0_train.shape[0]))
     elif optimal_k:
-        k_range=range(1,50)
+        k_range=range(1, min(50, X0_train.shape[0]))
     else:
         k_range=[min_range_k]
     
-
+    #y0_train.value_counts()
+    
+    if(np.abs(pd.DataFrame(X0_young_train).ndim - pd.DataFrame(X0_old_train).ndim) >2 ):
+        warnings.warn('Error! Biased Training dataset!')
+    
     scores = {}
     scores_list = []
 
     #finding the optimal nb of neighbors
     for k in tqdm(k_range):
-        knn = KNeighborsClassifier(n_neighbors=k, weights = 'distance', algorithm='ball_tree', p=1)
+        knn = KNeighborsClassifier(n_neighbors=k, weights = 'distance', algorithm='ball_tree', p=3)
         knn.fit(X0_train, y0_train)
         y_pred = knn.predict(X_test)
         scores[k] = metrics.accuracy_score(y_test, y_pred)
         scores_list.append(metrics.accuracy_score(y_test, y_pred))
+        if progressObject != None:
+            progressObject['jobProgress'][jobId] = min((k_range.index(k)+1.0)/len(k_range), 0.99)
     
-    k_optimal = scores_list.index(max(scores_list))
-    model = KNeighborsClassifier(n_neighbors= k_optimal, weights = 'distance', algorithm='ball_tree', p=1)
+    k_optimal = scores_list.index(max(scores_list))+min_range_k
+    model = KNeighborsClassifier(n_neighbors= k_optimal, weights = 'distance', algorithm='ball_tree', p=3)
     #model.fit(X0_train, y0_train)
     accuracys=[]
 
@@ -208,7 +231,6 @@ def train2(X,y, k_cross_validation_ratio, testing_size, optimal_k=True, min_rang
     eval_accuracy = np.mean(accuracys)
     #save the pretrained model:
     model.fit(X0_train, y0_train)
-    model_name='pretrained_knn_model'
     pickle.dump(model, open(model_name, 'wb'))   
 
     return eval_accuracy, model, X0_train, y0_train, X_test, y_test, k_optimal
@@ -229,7 +251,7 @@ def test(X_train, y_train, X_test, y_test,modelName):
     classification_rep = classification_report(y_test, y_pred, output_dict=True)
     test_score = metrics.accuracy_score(y_test, y_pred)
     recall_score = metrics.recall_score(y_test, y_pred)
-    return test_score, classification_rep
+    return  test_score, classification_rep
 
 
 def preprocessingData(file_path):
@@ -266,7 +288,7 @@ def dataframeCreation(images):
             else:
                 count= count+1
                 raise ValueError('Error! No face was detected. Please try again with a clearer picture')
-   
+                 
                 
 
         print("Count: empty: {}".format(count))
@@ -326,8 +348,7 @@ def createInputsFromImagePaths(imagePaths):
         else:
             count= count+1
             print("Error! No face was detected. Please try again with a clearer picture")
-            #to remove the remove method    
-
+            #to remove the remove method   
        
     print("Count: empty: {}".format(count))
     return lbp_df
@@ -357,6 +378,35 @@ def createInputFromBase64(base64Image):
         print("Error! No face was detected. Please try again with a clearer picture")
         
     return lbp_df
+
+def createTrainDFFromBase64(images, isYoung, progressObject, jobId):
+    lbp_df = pd.DataFrame()
+    sample_points = 16
+    radius = 4
+    progressObject['jobProgress'][jobId] = 0.0
+
+    for base64Image in images:
+        encoded_data = base64Image.split(',')[1]
+        nparr = np.fromstring(base64.b64decode(encoded_data), np.uint8)
+
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        faces, x,y,w,h = locateFace(img)
+        if not faces == ():
+            crop_img = img[y:y+h, x:x+w]
+            lbp = LocalBinaryPatterns(sample_points, radius).describe(cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY))
+            row = dict(zip(range(0, len(lbp)), lbp))
+            row['age_new'] = isYoung
+            lbp_df = lbp_df.append(row, ignore_index=True)
+
+        if progressObject != None:
+            progressObject['jobProgress'][jobId] = min((images.index(base64Image)+1.0)/len(images), 0.99)
+
+    lbp_df['age_new'] = lbp_df['age_new'].astype('bool')
+    X = lbp_df.drop(['age_new'], axis=1)
+    y = lbp_df['age_new']
+
+    return X,y
+    
 
 def predict(X, model):
     predictions = model.predict(X)
@@ -433,21 +483,94 @@ def performJob(job, sharedObject):
         sharedObject['jobResults'][job['jobID']] = {'label': labels[0]}
     if jobType == 'TRAIN':
         if job['trainType'] == 'params':
+            sharedObject['isTraining'] = True
+            sharedObject['trainingId'] = job['jobID']
             print("training new model based on our dataset")
+            model_name="user_knn_model"
             X, y = getRandomSamples(job['nbrYoung'], job['nbrOld'])
 
-            eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train2(X, y, k_cross_validation_ratio=5, testing_size=0.15, optimal_k=True, min_range_k= 1, max_range_k=100)
+            optimize = job['optimizeK']
+            if optimize:
+                maxK = job['maxK']
+            else:
+                maxK = 100
+
+            eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train2(X, y, k_cross_validation_ratio=5, testing_size=job['test_ratio'], optimal_k=job['optimizeK'], min_range_k= job['minK'], max_range_k=maxK,model_name=model_name, progressObject=sharedObject, jobId=job['jobID'])
             test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName=model_name)
 
+            sharedObject['model_name'] = model_name
+            sharedObject['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+            sharedObject['u_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
 
-path = "../dataset/"
+            with open('./config.json', 'r+') as f:
+                config = json.load(f)
+                f.seek(0)
+                config['model_name'] = model_name
+                config['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+                config['u_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
+                json.dump(config, f)
+                f.truncate()
+            sharedObject['jobProgress'][job['jobID']] = 1.0
+            sharedObject['isTraining'] = False
+            print('finishedTraining!')
+
+        elif job['trainType'] == 'reset':
+            print('Resetting model to pretrained!')
+            model_name='pretrained_knn_model'
+            sharedObject['model_name'] = model_name
+            with open('./config.json', 'r+') as f:
+                config = json.load(f)
+                f.seek(0)
+                config['model_name'] = model_name
+                json.dump(config, f)
+                f.truncate()
+            sharedObject['jobProgress'][job['jobID']] = 1.0
+        elif job['trainType'] == 'custom':
+            sharedObject['isTraining'] = True
+            sharedObject['trainingId'] = job['jobID']
+            print('Creating model from custom dataset!')
+            model_name="user_knn_model"
+
+            imagesYoung = job['youngPics']
+            X_young, y_young = createTrainDFFromBase64(imagesYoung, True, sharedObject, job['jobID'])
+
+            imagesOld = job['oldPics']
+            X_old, y_old = createTrainDFFromBase64(imagesOld, False, sharedObject, job['jobID'])
+
+            optimize = job['optimizeK']
+            if optimize:
+                maxK = job['maxK']
+            else:
+                maxK = 100
+            eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train(X_young,y_young, X_old, y_old, k_cross_validation_ratio=5, testing_size=job['test_ratio'], optimal_k=job['optimizeK'], min_range_k=job['minK'], max_range_k=maxK, model_name=model_name, progressObject=sharedObject, jobId=job['jobID'])
+            test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName=model_name)
+
+            print(conf_rep)
+            sharedObject['model_name'] = model_name
+            sharedObject['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+            sharedObject['u_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
+
+            
+            with open('./config.json', 'r+') as f:
+                config = json.load(f)
+                f.seek(0)
+                config['model_name'] = model_name
+                config['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+                config['u_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
+                json.dump(config, f)
+                f.truncate()
+            sharedObject['jobProgress'][job['jobID']] = 1.0
+            sharedObject['isTraining'] = False
+            print('finishedTraining!')
+
+
 
 def predictFromMLScriptOnly(path):
     images = preprocessingData(path)
     X_young_df, y_young_df ,X_old_df, y_old_df, _ =dataframeCreation(images)
     #model = loadPreTrained(modelName="pretrained_knn_model")
     eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train(X_young_df, y_young_df ,X_old_df, y_old_df, k_cross_validation_ratio=5, testing_size=0.2, optimal_k=True, min_range_k= 1, max_range_k=100)
-
+    
     print(pd.DataFrame(y_train).apply(pd.value_counts))
     test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName="pretrained_knn_model")
     print("Test Score: {}".format(test_score))
@@ -455,11 +578,12 @@ def predictFromMLScriptOnly(path):
 
     model.fit(X_train, y_train)
     #model = loadPreTrained("pretrained_knn_model")
-    """testPath = '../dataset/male/age_10_14/pic_0014.png'
-    testPath2 = "../dataset/male/age_50_54/pic_0028.png"
+    testPath = '../dataset/male/age_10_14/pic_0126.png'
+    testPath2 = "../dataset/male/age_60_94/pic_0341.png"
     patht = [testPath, testPath2]
     X=createInputsFromImagePaths(patht)
     label , pred = predict(X, model)
-    print(pred)"""
+    print(pred)
 
+path = "../dataset"
 predictFromMLScriptOnly(path)
