@@ -11,7 +11,7 @@ const getClassname = (className, isDragActive) => {
 export default class DnDImgUploader extends Component {
   constructor(props) {
     super(props);
-
+    this.onDropURLs = props.onDropURLs;
     this.state = {
       images: [],
       imageUrls: [],
@@ -33,14 +33,17 @@ export default class DnDImgUploader extends Component {
 
   componentWillUnmount() {
     console.log("unmounting, revoking image urls");
+    this.state.imageUrls.forEach((url) => URL.revokeObjectURL(url));
   }
 
   render() {
     const onDrop = (acceptedFiles) => {
+      const urls = this.getFilesURLs(acceptedFiles);
+      this.onDropURLs(urls);
       this.setState((state, props) => {
         return {
           images: [...state.images, ...acceptedFiles],
-          imageUrls: [...state.imageUrls, ...this.getFilesURLs(acceptedFiles)],
+          imageUrls: [...state.imageUrls, ...urls],
         };
       });
     };

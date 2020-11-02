@@ -192,7 +192,7 @@ def train(X_young,y_young, X_old, y_old, k_cross_validation_ratio, testing_size,
 def train2(X,y, k_cross_validation_ratio, testing_size, optimal_k=True, min_range_k=1, max_range_k=100, progressObject=None, jobId=-1, model_name="pretrained_knn_model"):
     
     #split the dataset into training and testing data
-    X0_train, X_test, y0_train, y_test= train_test_split(X, y, test_size=0.2, random_state=7)
+    X0_train, X_test, y0_train, y_test= train_test_split(X, y, test_size=testing_size, random_state=7)
 
     #Count the number of young and old instances and make sure that they are less than the threshold (2)
     #If not, warn the user that this is a biased dataset
@@ -631,8 +631,8 @@ def predictFromMLScriptOnly(path):
 
     model.fit(X_train, y_train)
     #model = loadPreTrained("pretrained_knn_model")
-    testPath = '../dataset/male/age_10_14/pic_0126.png'
-    testPath2 = "../dataset/male/age_60_94/pic_0341.png"
+    testPath = './dataset/male/age_10_14/pic_0126.png'
+    testPath2 = "./dataset/male/age_60_94/pic_0341.png"
     patht = [testPath, testPath2]
     #extract the images from the specified path
     X=createInputsFromImagePaths(patht)
@@ -641,5 +641,5 @@ def predictFromMLScriptOnly(path):
     print(pred)
 
 #path to be used for the prediction - to be specified in the case of using the ML script only
-path = "../dataset"
-predictFromMLScriptOnly(path)
+"""path = "../dataset"
+predictFromMLScriptOnly(path)"""

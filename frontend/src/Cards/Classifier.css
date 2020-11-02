@@ -7,3 +7,15 @@
   position: absolute;
   bottom: 0;
 }
+
+.predictionResult {
+  position: absolute;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.predictionText {
+  color: red;
+}
