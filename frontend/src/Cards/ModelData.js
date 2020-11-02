@@ -14,6 +14,7 @@ function ModelData(props) {
   var recallYoung = props.recallY || 1.0;
   var precisionOld = props.precisionO || 1.0;
   var recallOld = props.recallO || 1.0;
+  var testScore = props.testScore;
 
   return (
     <Card className="cardClass" variant="outlined">
@@ -30,6 +31,9 @@ function ModelData(props) {
         </p>
         <p className="info">
           <em>Testing Instances: </em> {testingInstances}
+        </p>
+        <p className="info">
+          <em>Accuracy: </em> {Math.round(testScore * 100)}%
         </p>
         <table>
           <thead>

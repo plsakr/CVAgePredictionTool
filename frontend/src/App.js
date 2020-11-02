@@ -104,6 +104,7 @@ class App extends React.Component {
             recallY={this.state.modelScores.Young.recall}
             precisionO={this.state.modelScores.Old.precision}
             recallO={this.state.modelScores.Old.recall}
+            testScore={this.state.modelScores.test_score}
           />
           <TrainingCard
             onTrain={this.handleTrainButton.bind(this)}

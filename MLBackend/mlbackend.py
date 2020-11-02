@@ -199,7 +199,7 @@ def train2(X,y, k_cross_validation_ratio, testing_size, optimal_k=True, min_rang
     count_young = 0
     count_old = 0
     for i in y0_train:
-        if y0_train[i]:
+        if i:
             count_young = count_young+1
         else:
             count_old = count_old+1
@@ -286,6 +286,9 @@ def test(X_train, y_train, X_test, y_test,modelName):
 
 def preprocessingData(file_path):
     #Get the images from a specific path and read them by going over each and every file in the path using tqdm
+    if os.path.exists('./dataset.json'):
+        with open('./dataset.json', 'r') as f:
+            return json.load(f)
     images = []
     for x, y, z in os.walk(file_path):
         for name in tqdm(z):
@@ -323,7 +326,7 @@ def dataframeCreation(images):
                 #Generate the lbp samples of this image and append them to the dataframe and extract the label from the file name
                 lbp = LocalBinaryPatterns(sample_points, radius).describe(cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY))
                 row = dict(zip(range(0, len(lbp)), lbp))
-                row['ageRange'] = i.split('/')[3] ## TODO: change 3 to the index in the path where the age range is located
+                row['ageRange'] = i.split('/')[3] 
                 lbp_df = lbp_df.append(row, ignore_index=True)
 
             else:
@@ -514,7 +517,7 @@ def initializeML(initial_dataset_path = './dataset'):
 
         # setup the initial config
         sharedObject['model_name'] = model_name
-        sharedObject['p_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+        sharedObject['p_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy'], 'test_score': test_score}
         sharedObject['p_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
 
         with open('./config.json', 'w') as f:
@@ -523,9 +526,11 @@ def initializeML(initial_dataset_path = './dataset'):
     return sharedObject
 
 def performJob(job, sharedObject):
+    # received a job from backend, view the task and execute it
     jobType = job['type']
     print(type(sharedObject))
     if jobType == 'PREDICT':
+        # predict image label
         image = job['image']
         labels, _ = predictFromBase64(image)
         print('prediction finished', labels)
@@ -533,6 +538,7 @@ def performJob(job, sharedObject):
         sharedObject['jobResults'][job['jobID']] = {'label': labels[0]}
     if jobType == 'TRAIN':
         if job['trainType'] == 'params':
+            # train a model based on our dataset
             sharedObject['isTraining'] = True
             sharedObject['trainingId'] = job['jobID']
             print("training new model based on our dataset")
@@ -549,14 +555,14 @@ def performJob(job, sharedObject):
             test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName=model_name)
 
             sharedObject['model_name'] = model_name
-            sharedObject['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+            sharedObject['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy'], 'test_score': test_score}
             sharedObject['u_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
 
             with open('./config.json', 'r+') as f:
                 config = json.load(f)
                 f.seek(0)
                 config['model_name'] = model_name
-                config['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+                config['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy'], 'test_score': test_score}
                 config['u_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
                 json.dump(config, f)
                 f.truncate()
@@ -565,6 +571,7 @@ def performJob(job, sharedObject):
             print('finishedTraining!')
 
         elif job['trainType'] == 'reset':
+            # reset model to our default dataset
             print('Resetting model to pretrained!')
             model_name='pretrained_knn_model'
             sharedObject['model_name'] = model_name
@@ -576,6 +583,7 @@ def performJob(job, sharedObject):
                 f.truncate()
             sharedObject['jobProgress'][job['jobID']] = 1.0
         elif job['trainType'] == 'custom':
+            # train a custom model
             sharedObject['isTraining'] = True
             sharedObject['trainingId'] = job['jobID']
             print('Creating model from custom dataset!')
@@ -597,7 +605,7 @@ def performJob(job, sharedObject):
 
             print(conf_rep)
             sharedObject['model_name'] = model_name
-            sharedObject['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+            sharedObject['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy'], 'test_score': test_score}
             sharedObject['u_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
 
             
@@ -605,7 +613,7 @@ def performJob(job, sharedObject):
                 config = json.load(f)
                 f.seek(0)
                 config['model_name'] = model_name
-                config['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy']}
+                config['u_model_scores'] = {'Young': conf_rep['True'], 'Old': conf_rep['False'], 'acc': conf_rep['accuracy'], 'test_score': test_score}
                 config['u_model_params'] = {'K': k_optimal, 'train_nbr': X_train.shape[0], 'test_nbr': X_test.shape[0]}
                 json.dump(config, f)
                 f.truncate()

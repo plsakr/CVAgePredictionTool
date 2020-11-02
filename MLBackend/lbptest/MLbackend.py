@@ -617,28 +617,32 @@ def performJob(job, sharedObject):
 
 def predictFromMLScriptOnly(path):
     #get the images in the specified path
-    images = preprocessingData(path)
-    #Get the classes and dump them into 2 separate dataframes
-    X_young_df, y_young_df ,X_old_df, y_old_df, _ =dataframeCreation(images)
-    #train the model
-    eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train(X_young_df, y_young_df ,X_old_df, y_old_df, k_cross_validation_ratio=5, testing_size=0.2, optimal_k=True, min_range_k= 1, max_range_k=100)
-    #print the nb of occurences of each class in the training dataset
-    print(pd.DataFrame(y_train).apply(pd.value_counts))
-    #test on the data and get the results
-    test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName="pretrained_knn_model")
-    print("Test Score: {}".format(test_score))
-    print(conf_rep)
+    # images = preprocessingData(path)
+    with open('./dataset.json', 'r') as f:
+        images = json.load(f)
+        #Get the classes and dump them into 2 separate dataframes
+        print("I GOT PICS")
+        X_young_df, y_young_df ,X_old_df, y_old_df, _ =dataframeCreation(images)
+        print("PREPROCESSING DONE!")
+        #train the model
+        eval_accuracy, model, X_train, y_train, X_test, y_test, k_optimal = train(X_young_df, y_young_df ,X_old_df, y_old_df, k_cross_validation_ratio=5, testing_size=0.2, optimal_k=True, min_range_k= 1, max_range_k=100)
+        #print the nb of occurences of each class in the training dataset
+        print(pd.DataFrame(y_train).apply(pd.value_counts))
+        #test on the data and get the results
+        test_score, conf_rep = test(X_train, y_train,X_test, y_test, modelName="pretrained_knn_model")
+        print("Test Score: {}".format(test_score))
+        print(conf_rep)
 
-    model.fit(X_train, y_train)
-    #model = loadPreTrained("pretrained_knn_model")
-    testPath = '../dataset/male/age_10_14/pic_0126.png'
-    testPath2 = "../dataset/male/age_60_94/pic_0341.png"
-    patht = [testPath, testPath2]
-    #extract the images from the specified path
-    X=createInputsFromImagePaths(patht)
-    #test on these pictures to predict their labels
-    label , pred = predict(X, model)
-    print(pred)
+        model.fit(X_train, y_train)
+        #model = loadPreTrained("pretrained_knn_model")
+        testPath = '../dataset/male/age_10_14/pic_0126.png'
+        testPath2 = "../dataset/male/age_60_94/pic_0341.png"
+        patht = [testPath, testPath2]
+        #extract the images from the specified path
+        X=createInputsFromImagePaths(patht)
+        #test on these pictures to predict their labels
+        label , pred = predict(X, model)
+        print(pred)
 
 #path to be used for the prediction - to be specified in the case of using the ML script only
 path = "../dataset"

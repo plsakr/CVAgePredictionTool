@@ -44,7 +44,12 @@ function Classifier(props) {
                 if (predRes.ok) {
                   predRes.json().then((bodyPred) => {
                     console.log(bodyPred);
-                    setPrediction(bodyPred.jobResults.label[0]);
+                    if ("label" in bodyPred.jobResults) {
+                      console.log("inside IF");
+                      setPrediction(bodyPred.jobResults.label[0]);
+                    } else {
+                      setPrediction("No face detected");
+                    }
                   });
                 }
               });

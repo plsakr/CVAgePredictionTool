@@ -81,16 +81,16 @@ export default class Params extends Component {
               inputProps={{ name: "oldPicsNbr" }}
               onChange={this.handleChange}
               value={this.state.oldPicsNbr}
-              min={1}
-              max={36000}
+              min={10}
+              max={885}
             />
             <Typography># Of Young Pictures</Typography>
             <RangeSlider
               inputProps={{ name: "youngPicsNbr" }}
               value={this.state.youngPicsNbr}
               onChange={this.handleChange}
-              min={1}
-              max={36000}
+              min={10}
+              max={885}
             />
           </div>
         </div>
