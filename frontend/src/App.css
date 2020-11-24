@@ -20,6 +20,7 @@
   padding-left: 1.5rem;
   padding-right: 1.5rem;
   width: 20rem;
+  min-height: 20rem;
   height: 100%;
 }
 

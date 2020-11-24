@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import Modal from "react-bootstrap/esm/Modal";
 import ProgressBar from "react-bootstrap/ProgressBar";
-import { backend } from "./Config";
+import { backend } from "../Config";
 
 export default class TrainingLoad extends Component {
   constructor(props) {

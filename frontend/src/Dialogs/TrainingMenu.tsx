@@ -1,31 +1,35 @@
-import React from "react";
+import * as React from "react";
 import Modal from "react-bootstrap/Modal";
 
-import "./Dialog.css";
+import "../Dialog.css";
 import Button from "react-bootstrap/Button";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ToggleButton from "react-bootstrap/ToggleButton";
 
-import Params from "./Training/Params";
-import Dataset from "./Training/Dataset";
-import { backend } from "./Config";
+import Params from "../Training/Params";
+import Dataset from "../Training/Dataset";
+import { backend } from "../Config";
+import {TrainMenuProps, TrainMenuState} from "../API/MyTypes";
 
-class TrainingMenu extends React.Component {
-  constructor(props) {
+class TrainingMenu extends React.Component<TrainMenuProps, TrainMenuState> {
+
+  state: TrainMenuState = {
+    isOpen: false,
+    tabValue: "0",
+    minK: 1,
+    maxK: 100,
+    oldPicsNbr: 10,
+    youngPicsNbr: 10,
+    testingRatio: 0.2,
+    isChecked: false,
+    youngUrls: [],
+    oldUrls: [],
+  };
+  onTrain: (arg0: number) => void;
+
+  constructor(props: TrainMenuProps) {
     super(props);
     this.onTrain = props.onTrain;
-    this.state = {
-      isOpen: false,
-      tabValue: "0",
-      minK: 1,
-      maxK: 100,
-      oldPicsNbr: 10,
-      youngPicsNbr: 10,
-      testingRatio: 0.2,
-      isChecked: false,
-      youngUrls: [],
-      oldUrls: [],
-    };
   }
 
   // allow others to open me
@@ -33,12 +37,12 @@ class TrainingMenu extends React.Component {
     this.setState({ isOpen: true });
   }
 
-  resolveURLs(urls) {
+  resolveURLs(urls: any) {
     return new Promise((resolve, reject) => {
       console.log(urls);
       const count = urls.length;
-      var result = [];
-      urls.forEach((url) => {
+      var result: any[] = [];
+      urls.forEach((url: string) => {
         let reader = new FileReader();
         let blob = fetch(url).then((r) =>
           r.blob().then((blob) => {
@@ -55,7 +59,7 @@ class TrainingMenu extends React.Component {
     });
   }
 
-  performRequest(req) {
+  performRequest(req: any) {
     if (req !== "undefined") {
       fetch(`${backend}/train`, req).then((res) => {
         if (!res.ok) {
@@ -194,17 +198,17 @@ class TrainingMenu extends React.Component {
     });
   }
 
-  handleFormChange(e, isCheckbox = false) {
+  handleFormChange(e: any, isCheckbox = false) {
     const name = isCheckbox ? "isChecked" : e.target.name;
     const value = isCheckbox ? e.target.checked : Number(e.target.value);
     console.log(name);
     console.log(value);
-    this.setState({
-      [name]: value,
-    });
+    // this.setState({
+    //   [name]: value,
+    // });
   }
 
-  handleYoungUpload(urls) {
+  handleYoungUpload(urls: any) {
     this.setState((state, props) => {
       return {
         youngUrls: [...state.youngUrls, ...urls],
@@ -212,7 +216,7 @@ class TrainingMenu extends React.Component {
     });
   }
 
-  handleOldUpload(urls) {
+  handleOldUpload(urls: any) {
     this.setState((state, props) => {
       return {
         oldUrls: [...state.oldUrls, ...urls],

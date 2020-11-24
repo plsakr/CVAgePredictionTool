@@ -1,0 +1,12 @@
+.appBar {
+    position: relative;
+}
+
+.title {
+    margin-left: 2rem;
+    flex: 1;
+}
+
+.dialogContent {
+    margin-top: 8rem;
+}
