@@ -23,6 +23,17 @@ function generateData(train_acc: number[], val_acc: number[]): Serie[] {
     return [train_acc_data, val_acc_data]
 }
 
+function generateAxis(length: number): number[] {
+    const final = length % 5 === 0 ? length : Math.floor(length / 5)*5;
+    let result = [];
+    result.push(1)
+    for (let i = 5; i <= final; i = i+5)
+        result.push(i);
+    if (result[result.length-1] !== length)
+        result.push(length);
+    return result;
+}
+
 class CNNScores extends React.Component<{scores: CNNScoreData}, {}> {
     scores: CNNScoreData;
     trainingData: Serie[];
@@ -43,39 +54,41 @@ class CNNScores extends React.Component<{scores: CNNScoreData}, {}> {
         return true;
     }
 
-    MyResponsiveLine = () => {
+    MyResponsiveLine = (label: string, data: Serie[]) => {
         return (
             <ResponsiveLine
-                data={this.trainingData}
-                margin={{top: 50, right: 110, bottom: 50, left: 60}}
+                data={data}
+                margin={{top: 20, right: 110, bottom: 50, left: 60}}
                 xScale={{type: 'point'}}
-                yScale={{type: 'linear', min: 'auto', max: 'auto', stacked: true, reverse: false}}
+                yScale={{type: 'linear', min: 'auto', max: 1, stacked: false, reverse: false}}
                 yFormat=" >-.2f"
                 axisTop={null}
                 axisRight={null}
                 axisBottom={{
                     orient: 'bottom',
-                    tickSize: 5,
+                    tickSize: 1,
+                    tickValues: generateAxis(data[0].data.length),
                     tickPadding: 5,
                     tickRotation: 0,
-                    legend: 'transportation',
+                    legend: 'Epoch',
                     legendOffset: 36,
                     legendPosition: 'middle'
                 }}
                 axisLeft={{
                     orient: 'left',
-                    tickSize: 5,
+                    tickSize: 0.1,
                     tickPadding: 5,
                     tickRotation: 0,
-                    legend: 'count',
+                    legend: label,
                     legendOffset: -40,
                     legendPosition: 'middle'
                 }}
-                pointSize={10}
+                colors={{scheme:'category10'}}
+                pointSize={3}
                 pointColor={{theme: 'background'}}
                 pointBorderWidth={2}
                 pointBorderColor={{from: 'serieColor'}}
-                pointLabelYOffset={-12}
+                // pointLabelYOffset={-12}
                 enableSlices="x"
                 legends={[
                     {
@@ -108,7 +121,19 @@ class CNNScores extends React.Component<{scores: CNNScoreData}, {}> {
     }
 
     render() {
-        return undefined;
+        return (
+            <div>
+                <div>
+                    <p className="info">
+                        <em>Accuracy: </em> {this.scores.accuracy}
+                    </p>
+                    <p className="info">
+                        <em>One-Off Accuracy: </em> {this.scores.oneOff}
+                    </p>
+                </div>
+                <div style={{display: "flex",height: 300}}>{this.MyResponsiveLine('Accuracy', this.trainingData)}{this.MyResponsiveLine('Loss', this.lossData)}</div>
+                {/*<div style={{height: 300}}></div>*/}
+            </div>);
     }
 }
 

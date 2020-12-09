@@ -14,6 +14,7 @@ import {AppState, ModelInfo, PrecisionRecall} from "./API/MyTypes";
 import {RefObject} from "react";
 import {subscribeToInfo} from "./API/BackendCalls";
 import ScoresDialog from "./Dialogs/ScoresDialog";
+import TrainingDialog from "./Dialogs/Training/TrainingDialog";
 
 const defaultModel = "pretrained_knn_model";
 
@@ -30,7 +31,8 @@ class App extends React.Component<{}, AppState> {
     },
     isTraining: false,
     trainingId: -1,
-    isScoresOpen: false
+    isScoresOpen: false,
+    isTrainingOpen: false
   };
 
   trainingMenu: RefObject<TrainingMenu> = React.createRef();
@@ -73,10 +75,13 @@ class App extends React.Component<{}, AppState> {
     this.setState({isScoresOpen: false})
   }
 
+  handleTrainClose() {
+    this.setState({isTrainingOpen: false})
+  }
+
   handleTrainButton(e: any) {
     console.log("TRAINING CLICKED");
-    if (this.trainingMenu.current != null)
-      this.trainingMenu.current.open();
+    this.setState({isTrainingOpen: true})
   }
 
   handleResetButton(e: any) {
@@ -141,6 +146,7 @@ class App extends React.Component<{}, AppState> {
             onTrainDone={this.handleTrainDone.bind(this)}
           />
           <ScoresDialog isOpen={this.state.isScoresOpen} onClose={this.handleScoreClose.bind(this)} ensembleScores={this.state.ensembleData}/>
+          <TrainingDialog isOpen={this.state.isTrainingOpen} onClose={this.handleTrainClose.bind(this)} />
           <div className="credits">
             <img src="https://soe.lau.edu.lb/images/soe.png" />
             <h4>IEA Project Fall 2020</h4>

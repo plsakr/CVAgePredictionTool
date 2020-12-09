@@ -12,7 +12,9 @@ import {TransitionProps} from "@material-ui/core/transitions";
 import Box from "@material-ui/core/Box";
 import Tabs from "@material-ui/core/Tabs";
 import Tab from "@material-ui/core/Tab";
+import SwipeableViews from 'react-swipeable-views';
 import EnsembleScores from "./Scores/EnsembleScores";
+import CNNScores from "./Scores/CNNScores";
 
 
 
@@ -26,6 +28,7 @@ const Transition = React.forwardRef(function Transition(
 
 interface TabPanelProps {
     children?: React.ReactNode;
+    dir?: string;
     index: any;
     value: any;
 }
@@ -43,7 +46,7 @@ function TabPanel(props: TabPanelProps) {
         >
             {value === index && (
                 <Box p={3}>
-                    <Typography>{children}</Typography>
+                    {children}
                 </Box>
             )}
         </div>
@@ -70,6 +73,10 @@ class ScoresDialog extends React.Component<ModelScoreDialogProps, {value: number
         this.setState({value: newValue})
     };
 
+    handleChangeIndex = (index: number) => {
+        this.setState({value: index});
+    }
+
     constructor(props: ModelScoreDialogProps) {
         super(props);
         this.isOpen = props.isOpen;
@@ -81,6 +88,14 @@ class ScoresDialog extends React.Component<ModelScoreDialogProps, {value: number
         this.isOpen = nextProps.isOpen;
         this.ensembleData = nextProps.ensembleScores;
         return true;
+    }
+
+    randomNbrGenerator(): number[] {
+        let result = [];
+        for (let i = 0; i < 52; i++)
+            result.push(Math.random())
+
+        return result;
     }
 
 
@@ -102,15 +117,27 @@ class ScoresDialog extends React.Component<ModelScoreDialogProps, {value: number
                 </Tabs>
             </AppBar>
             <div className="dialogContent">
-                <TabPanel value={this.state.value} index={0}>
+                <TabPanel value={this.state.value} index={0} dir="x">
                     <EnsembleScores modelName={this.ensembleData.modelName} modelParams={this.ensembleData.modelParams}
                     modelScores={this.ensembleData.modelScores}/>
                 </TabPanel>
-                <TabPanel value={this.state.value} index={1}>
-                    Item Two
+                <TabPanel value={this.state.value} index={1} dir="x">
+                    <CNNScores scores={{accuracy: 0,
+                        oneOff: 0,
+                        twoOff: 0,
+                        train_acc: this.randomNbrGenerator(),
+                        val_acc: this.randomNbrGenerator(),
+                        loss_train: this.randomNbrGenerator(),
+                        loss_val: this.randomNbrGenerator()}} />
                 </TabPanel>
-                <TabPanel value={this.state.value} index={2}>
-                    Item Three
+                <TabPanel value={this.state.value} index={2}  dir="x">
+                    <CNNScores scores={{accuracy: 0,
+                        oneOff: 0,
+                        twoOff: 0,
+                        train_acc: this.randomNbrGenerator(),
+                        val_acc: this.randomNbrGenerator(),
+                        loss_train: this.randomNbrGenerator(),
+                        loss_val: this.randomNbrGenerator()}} />
                 </TabPanel>
             </div>
 

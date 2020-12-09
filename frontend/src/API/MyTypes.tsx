@@ -45,7 +45,8 @@ export type AppState = {
     ensembleData: EnsembleScoreData,
     isTraining: boolean,
     trainingId: number,
-    isScoresOpen: boolean
+    isScoresOpen: boolean,
+    isTrainingOpen: boolean,
 };
 
 
@@ -59,6 +60,15 @@ export type EnsembleScoreData = {
     modelName: string,
     modelParams: ModelParams,
     modelScores: ModelScores
+}
+
+export type TrainingDialogProps = {
+    isOpen: boolean,
+    onClose: () => void
+}
+
+export type TrainingDialogState = {
+    activeStep: number
 }
 
 export type CNNScoreData = {
