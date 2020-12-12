@@ -1,0 +1,16 @@
+.bigContent {
+    width: 100%;
+    height: 100%;
+}
+
+.bigContent .MuiFormControl-root {
+    display: flex !important;
+}
+
+.textField {
+    width: fit-content;
+}
+
+.formItem {
+    margin-top: 1rem !important;
+}

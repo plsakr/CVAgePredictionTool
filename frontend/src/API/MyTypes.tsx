@@ -68,7 +68,9 @@ export type TrainingDialogProps = {
 }
 
 export type TrainingDialogState = {
-    activeStep: number
+    activeStep: number,
+    chooseModel: ChooseState,
+    configureModel: ConfigureState
 }
 
 export type CNNScoreData = {
@@ -98,3 +100,22 @@ export type TrainMenuProps = {
     onTrain: (arg0: number) => void
 }
 
+export type ChooseState = {
+    modelType: number,
+    initialType: string,
+    trainInitial: boolean,
+    trainYoung: boolean,
+    trainOld: boolean,
+    fullClassesTrain: boolean,
+}
+
+export type ConfigureState = {
+    chosen: ChooseState | null,
+    optimizeK: boolean,
+    minK: number,
+    maxK: number,
+    svmKernel: string,
+    youngLayers: number,
+    oldLayers: number,
+    fullClassifierLayers: number
+}
