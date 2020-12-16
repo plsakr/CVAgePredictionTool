@@ -70,7 +70,8 @@ export type TrainingDialogProps = {
 export type TrainingDialogState = {
     activeStep: number,
     chooseModel: ChooseState,
-    configureModel: ConfigureState
+    configureModel: ConfigureState,
+    configureData: DatasetState
 }
 
 export type CNNScoreData = {
@@ -118,4 +119,12 @@ export type ConfigureState = {
     youngLayers: number,
     oldLayers: number,
     fullClassifierLayers: number
+}
+
+export type DatasetState = {
+    custom: boolean,
+    testingRatio: number,
+    imageURLs: string[][],
+    nbrClasses: number,
+    tabValue: number
 }

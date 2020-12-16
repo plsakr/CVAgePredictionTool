@@ -14,7 +14,7 @@ export default class DnDImgUploader extends Component {
     this.onDropURLs = props.onDropURLs;
     this.state = {
       images: [],
-      imageUrls: [],
+      imageUrls: props.currentURLs,
     };
   }
 
@@ -33,7 +33,7 @@ export default class DnDImgUploader extends Component {
 
   componentWillUnmount() {
     console.log("unmounting, revoking image urls");
-    this.state.imageUrls.forEach((url) => URL.revokeObjectURL(url));
+
   }
 
   render() {

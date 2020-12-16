@@ -7,7 +7,7 @@ import Toolbar from "@material-ui/core/Toolbar";
 import IconButton from "@material-ui/core/IconButton";
 import CloseIcon from "@material-ui/icons/Close";
 import Typography from "@material-ui/core/Typography";
-import {ChooseState, ConfigureState, TrainingDialogProps, TrainingDialogState} from "../../API/MyTypes";
+import {ChooseState, ConfigureState, DatasetState, TrainingDialogProps, TrainingDialogState} from "../../API/MyTypes";
 import Step from "@material-ui/core/Step";
 import StepLabel from "@material-ui/core/StepLabel";
 import Button from "@material-ui/core/Button";
@@ -16,6 +16,7 @@ import ChooseModelComponent from "./ChooseModelComponent";
 
 import './TrainingDialog.css';
 import ConfigureModels from "./ConfigureModels";
+import ConfigureDatasetComponent from "./ConfigureDatasetComponent";
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement },
@@ -48,6 +49,13 @@ class TrainingDialog extends React.Component<TrainingDialogProps, TrainingDialog
             oldLayers: 5,
             svmKernel: '',
             fullClassifierLayers: 5
+        },
+        configureData: {
+            imageURLs: [[],[],[],[]],
+            tabValue: 0,
+            custom: false,
+            nbrClasses: 4,
+            testingRatio: 0.2
         }
     }
     state: TrainingDialogState = this.originalState;
@@ -60,10 +68,18 @@ class TrainingDialog extends React.Component<TrainingDialogProps, TrainingDialog
         this.setState({configureModel: state});
     }
 
+    stepThreeHandler = (state: DatasetState) => {
+        this.setState({configureData: state});
+    }
+
     constructor(props: TrainingDialog) {
         super(props);
         this.isOpen = props.isOpen;
         this.onClose = props.onClose;
+    }
+
+    componentWillUnmount() {
+
     }
 
     getStepContent(step: number) {
@@ -83,12 +99,19 @@ class TrainingDialog extends React.Component<TrainingDialogProps, TrainingDialog
                                             youngLayers={this.state.configureModel.youngLayers}
                                             oldLayers={this.state.configureModel.oldLayers}
                                             fullClassifierLayers={this.state.configureModel.fullClassifierLayers}
-            onStateChange={this.stepTwoHandler.bind(this)}/>
+                                            onStateChange={this.stepTwoHandler.bind(this)}/>
+            case 2: return <ConfigureDatasetComponent custom={this.state.configureData.custom}
+                                                      testingRatio={this.state.configureData.testingRatio}
+                                                      imageURLs={this.state.configureData.imageURLs}
+                                                      nbrClasses={this.state.configureData.nbrClasses}
+                                                      needData={this.state.chooseModel.trainInitial || this.state.chooseModel.fullClassesTrain || this.state.chooseModel.trainOld || this.state.chooseModel.trainYoung}
+            onStateChange={this.stepThreeHandler.bind(this)}/>
             default: return 'what'
         }
     }
 
     handleClose = () => {
+        this.state.configureData.imageURLs.forEach((arr) => arr.forEach((url) => URL.revokeObjectURL(url)));
         this.setState(this.originalState)
         this.onClose()
     }
@@ -100,7 +123,25 @@ class TrainingDialog extends React.Component<TrainingDialogProps, TrainingDialog
 
     handleNext = () => {
         const prev = this.state.activeStep;
+        if (prev === 0) {
+            if (this.state.chooseModel.modelType === 0) {
+                let fixedStuff = this.state.configureData;
+                fixedStuff.imageURLs = [[],[],[],[]]
+                fixedStuff.nbrClasses = 4
+                this.state.configureData.imageURLs.forEach((arr) => arr.forEach((url) => URL.revokeObjectURL(url)));
+                this.setState({configureData: fixedStuff})
+            } else {
+                let fixedStuff = this.state.configureData;
+                fixedStuff.imageURLs = [[],[],[],[],[],[],[],[],[]]
+                fixedStuff.nbrClasses = 9
+                this.state.configureData.imageURLs.forEach((arr) => arr.forEach((url) => URL.revokeObjectURL(url)));
+                this.setState({configureData: fixedStuff})
+            }
+        }
         this.setState( {activeStep: prev+1})
+        if (prev+1 === this.steps.length) {
+            this.handleTrain();
+        }
     }
 
     handleTrain = () => {
@@ -135,16 +176,7 @@ class TrainingDialog extends React.Component<TrainingDialogProps, TrainingDialog
                     )
                 })}
             </Stepper>
-                    {this.state.activeStep === this.steps.length ? (
-                        <div>
-                            <Typography>
-                                Configuration completed - Press button to begin training!
-                            </Typography>
-                            <Button onClick={this.handleTrain.bind(this)}>
-                                Finish
-                            </Button>
-                        </div>
-                    ) : (
+
                         <div className="stepperContent">
                             {this.getStepContent(this.state.activeStep)}
                             <div className="stepperButtons">
@@ -159,7 +191,6 @@ class TrainingDialog extends React.Component<TrainingDialogProps, TrainingDialog
                                 </Button>
                             </div>
                         </div>
-                    )}
                 </div>
         </Dialog>);
     }
