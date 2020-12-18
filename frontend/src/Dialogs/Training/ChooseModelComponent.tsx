@@ -81,8 +81,6 @@ class ChooseModelComponent extends React.Component<ChooseProps, ChooseState>{
                     <FormControl className="formItem">
                         <FormLabel>Initial Classifier:</FormLabel>
                         <RadioGroup value={this.state.initialType} onChange={this.onInitialClassifierChange.bind(this)} row>
-                            <FormControlLabel value="KNN" control={<Radio />} label="KNN" />
-                            <FormControlLabel value="SVM" control={<Radio />} label="SVM" />
                             <FormControlLabel value="KNN+SVM" control={<Radio />} label="KNN+SVM" />
                             <FormControlLabel value="Pretrained" control={<Radio />} label="Pretrained KNN+SVM" />
                         </RadioGroup>

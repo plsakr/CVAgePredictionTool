@@ -3,6 +3,7 @@ import Card from "@material-ui/core/Card";
 import { Button } from "@material-ui/core";
 import "./Classifier.css";
 import { backend } from "../Config";
+import {predict, subscribeToPrediction} from "../API/BackendCalls";
 
 function Classifier(props) {
   const [image, setImage] = useState();
@@ -12,6 +13,12 @@ function Classifier(props) {
   const handleClick = (event) => {
     hiddenFileInput.current.click();
   };
+
+  const handlePredictionResult = (label) => {
+      setPrediction(label);
+  };
+
+  subscribeToPrediction(handlePredictionResult);
 
   async function handlePredict(e) {
     console.log("sending prediction request!");
@@ -31,6 +38,11 @@ function Classifier(props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: reader.result }),
       };
+
+      const body = {image: reader.result}
+
+      // predict(body)
+
       // console.log(`${backend}/predict`);
       fetch(`${backend}/predict`, req).then((postRes) => {
         // we now get the id, and fetch the result in 0.5s
@@ -39,16 +51,15 @@ function Classifier(props) {
           postRes.json().then((body) => {
             const jobId = body.jobId;
 
-            setTimeout(() => {
+            let timer = setInterval(() => {
               fetch(`${backend}/jobinfo?jobId=${jobId}`).then((predRes) => {
                 if (predRes.ok) {
                   predRes.json().then((bodyPred) => {
                     console.log(bodyPred);
                     if ("label" in bodyPred.jobResults) {
                       console.log("inside IF");
-                      setPrediction(bodyPred.jobResults.label[0]);
-                    } else {
-                      setPrediction("No face detected");
+                      setPrediction(bodyPred.jobResults.label);
+                      clearInterval(timer)
                     }
                   });
                 }

@@ -43,14 +43,14 @@ class CNNScores extends React.Component<{scores: CNNScoreData}, {}> {
     constructor(props: {scores: CNNScoreData}) {
         super(props);
         this.scores = props.scores;
-        this.trainingData = generateData(this.scores.train_acc, this.scores.val_acc);
-        this.lossData = generateData(this.scores.loss_train, this.scores.loss_val);
+        this.trainingData = generateData(this.scores.history.accuracy, this.scores.history.val_accuracy);
+        this.lossData = generateData(this.scores.history.loss, this.scores.history.val_loss);
     }
 
     shouldComponentUpdate(nextProps: Readonly<{ scores: CNNScoreData }>, nextState: Readonly<{}>, nextContext: any): boolean {
         this.scores = nextProps.scores;
-        this.trainingData = generateData(this.scores.train_acc, this.scores.val_acc);
-        this.lossData = generateData(this.scores.loss_train, this.scores.loss_val);
+        this.trainingData = generateData(this.scores.history.accuracy, this.scores.history.val_accuracy);
+        this.lossData = generateData(this.scores.history.loss, this.scores.history.val_loss);
         return true;
     }
 
@@ -60,7 +60,7 @@ class CNNScores extends React.Component<{scores: CNNScoreData}, {}> {
                 data={data}
                 margin={{top: 20, right: 110, bottom: 50, left: 60}}
                 xScale={{type: 'point'}}
-                yScale={{type: 'linear', min: 'auto', max: 1, stacked: false, reverse: false}}
+                yScale={{type: 'linear', min: 'auto', max: Math.max(1, Math.max(...data[0].data.map((d, i) => d.y as number))), stacked: false, reverse: false}}
                 yFormat=" >-.2f"
                 axisTop={null}
                 axisRight={null}

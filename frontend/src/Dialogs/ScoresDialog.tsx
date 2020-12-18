@@ -122,22 +122,10 @@ class ScoresDialog extends React.Component<ModelScoreDialogProps, {value: number
                     modelScores={this.ensembleData.modelScores}/>
                 </TabPanel>
                 <TabPanel value={this.state.value} index={1} dir="x">
-                    <CNNScores scores={{accuracy: 0,
-                        oneOff: 0,
-                        twoOff: 0,
-                        train_acc: this.randomNbrGenerator(),
-                        val_acc: this.randomNbrGenerator(),
-                        loss_train: this.randomNbrGenerator(),
-                        loss_val: this.randomNbrGenerator()}} />
+                    <CNNScores scores={this.props.neuralNetworkScores.young} />
                 </TabPanel>
                 <TabPanel value={this.state.value} index={2}  dir="x">
-                    <CNNScores scores={{accuracy: 0,
-                        oneOff: 0,
-                        twoOff: 0,
-                        train_acc: this.randomNbrGenerator(),
-                        val_acc: this.randomNbrGenerator(),
-                        loss_train: this.randomNbrGenerator(),
-                        loss_val: this.randomNbrGenerator()}} />
+                    <CNNScores scores={this.props.neuralNetworkScores.old} />
                 </TabPanel>
             </div>
 

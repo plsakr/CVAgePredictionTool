@@ -23,16 +23,28 @@ export type PrecisionRecall = {
 export type ModelScores = {
     Old: PrecisionRecall,
     Young: PrecisionRecall,
-    acc: number,
-    test_score: number
+    acc: number
 }
 
 export type ModelInfo = {
-    isTraining: boolean,
-    model_name: string,
-    model_params: ModelParams,
-    model_scores: ModelScores,
-    trainingId: number
+    model_name: string
+    ensemble_score: {
+        K: number,
+        KNNScore: {
+            0: PrecisionRecall,
+            1: PrecisionRecall,
+            accuracy: number
+        },
+
+
+    },
+    old_nn_score: CNNScoreData,
+    young_nn_score: CNNScoreData,
+    // isTraining: boolean,
+    // model_name: string,
+    // model_params: ModelParams,
+    // model_scores: ModelScores,
+    // trainingId: number
 }
 
 export type ModelParam = {
@@ -43,6 +55,10 @@ export type ModelParam = {
 
 export type AppState = {
     ensembleData: EnsembleScoreData,
+    cnnsData: {
+        young: CNNScoreData,
+        old: CNNScoreData
+    } | undefined
     isTraining: boolean,
     trainingId: number,
     isScoresOpen: boolean,
@@ -54,6 +70,10 @@ export type ModelScoreDialogProps = {
     isOpen: boolean,
     onClose: () => void,
     ensembleScores: EnsembleScoreData,
+    neuralNetworkScores: {
+        young: CNNScoreData,
+        old: CNNScoreData
+    }
 }
 
 export type EnsembleScoreData = {
@@ -64,7 +84,8 @@ export type EnsembleScoreData = {
 
 export type TrainingDialogProps = {
     isOpen: boolean,
-    onClose: () => void
+    onClose: () => void,
+    onTrain: (jobId: number) => void
 }
 
 export type TrainingDialogState = {
@@ -78,10 +99,13 @@ export type CNNScoreData = {
     accuracy: number,
     oneOff: number,
     twoOff: number,
-    train_acc: number[],
-    val_acc: number[],
-    loss_train: number[],
-    loss_val: number[]
+    trainTime: number,
+    history: {
+        loss: number[],
+        accuracy: number[],
+        val_loss: number[],
+        val_accuracy: number[]
+    }
 }
 
 export type TrainMenuState = {

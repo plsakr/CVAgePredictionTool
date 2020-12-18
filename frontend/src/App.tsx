@@ -15,18 +15,19 @@ import {RefObject} from "react";
 import {subscribeToInfo} from "./API/BackendCalls";
 import ScoresDialog from "./Dialogs/ScoresDialog";
 import TrainingDialog from "./Dialogs/Training/TrainingDialog";
+import {backend} from "./Config";
 
 const defaultModel = "pretrained_knn_model";
 
 
 class App extends React.Component<{}, AppState> {
   state: AppState = {
-    ensembleData: {
+      cnnsData: undefined,
+      ensembleData: {
       modelName: "",
       modelScores: {Old: {precision:0, recall:0, support:0},
                     Young: {precision:0, recall:0, support:0},
-                    acc: 0,
-                    test_score: 0},
+                    acc: 0,},
       modelParams: {K:0, train_nbr:0, test_nbr:0},
     },
     isTraining: false,
@@ -37,34 +38,65 @@ class App extends React.Component<{}, AppState> {
 
   trainingMenu: RefObject<TrainingMenu> = React.createRef();
 
-  recieveInfo(data: ModelInfo) {
-    console.log(data)
-    this.setState({
-      isTraining: data.isTraining,
-      ensembleData: {
-        modelName: data.model_name,
-        modelScores: {
-          Old: { precision: data.model_scores.Old.precision,
-          recall: data.model_scores.Old.recall, support: data.model_scores.Old.support},
-          Young: { precision: data.model_scores.Young.precision, recall: data.model_scores.Young.recall, support: data.model_scores.Young.support},
-          acc: data.model_scores.acc,
-          test_score: data.model_scores.test_score
-        },
-        modelParams: {
-          K: data.model_params.K,
-          test_nbr: data.model_params.test_nbr,
-          train_nbr: data.model_params.train_nbr
-        }
-      },
-    })
-  }
+  // recieveInfo(data: ModelInfo) {
+  //   console.log(data.young_nn_score)
+  //   this.setState({
+  //     ensembleData: {
+  //       modelName: data.model_name,
+  //       modelScores: {
+  //         Old: { precision: data.ensemble_score.KNNScore["1"].precision,
+  //         recall: data.ensemble_score.KNNScore["1"].recall, support: data.ensemble_score.KNNScore["1"].support},
+  //         Young: { precision: data.ensemble_score.KNNScore["0"].precision, recall: data.ensemble_score.KNNScore["0"].recall, support: data.ensemble_score.KNNScore["0"].support},
+  //         acc: data.ensemble_score.KNNScore.accuracy,
+  //         // test_score: data.model_scores.test_score
+  //       },
+  //       modelParams: {
+  //         K: data.ensemble_score.K,
+  //         test_nbr: 0,
+  //         train_nbr: 0
+  //       }
+  //     },
+  //       cnnsData: {
+  //         young: data.young_nn_score,
+  //           old: data.old_nn_score
+  //       }
+  //   })
+  // }
 
   componentDidMount() {
-    console.log('mounted')
-    subscribeToInfo(this.recieveInfo.bind(this));
+      fetch(`${backend}/info`).then((result) => {
+          if (result.ok) {
+              result.json().then((body) => {
+                  console.log(body);
+                  this.setState({
+                      ensembleData: {
+                          modelName: body.model_name,
+                          modelScores: {
+                              Old: { precision: body.ensemble_score.KNNScore["1"].precision,
+                                  recall: body.ensemble_score.KNNScore["1"].recall, support: body.ensemble_score.KNNScore["1"].support},
+                              Young: { precision: body.ensemble_score.KNNScore["0"].precision, recall: body.ensemble_score.KNNScore["0"].recall, support: body.ensemble_score.KNNScore["0"].support},
+                              acc: body.ensemble_score.KNNScore.accuracy,
+                              // test_score: data.model_scores.test_score
+                          },
+                          modelParams: {
+                              K: body.ensemble_score.K,
+                              test_nbr: 0,
+                              train_nbr: 0
+                          }
+                      },
+                      cnnsData: {
+                          young: body.young_nn_score,
+                          old: body.old_nn_score
+                      }
+                  })
+              });
+          }
+      });
   }
 
-  handlePredict(base64: any) {}
+  handlePredict(base64: any) {
+      console.log('predicting', base64)
+  }
 
   handleScoreButton() {
     console.log("score button clicked")
@@ -124,7 +156,7 @@ class App extends React.Component<{}, AppState> {
   }
 
   render() {
-    if (this.state.ensembleData.modelScores.Old.support !== 0) {
+    if (this.state.ensembleData.modelScores.Old.support !== 0 && this.state.cnnsData !== undefined) {
       return (
         <div className="App">
           <Classifier onPredict={this.handlePredict.bind(this)} />
@@ -145,8 +177,8 @@ class App extends React.Component<{}, AppState> {
             jobId={this.state.trainingId}
             onTrainDone={this.handleTrainDone.bind(this)}
           />
-          <ScoresDialog isOpen={this.state.isScoresOpen} onClose={this.handleScoreClose.bind(this)} ensembleScores={this.state.ensembleData}/>
-          <TrainingDialog isOpen={this.state.isTrainingOpen} onClose={this.handleTrainClose.bind(this)} />
+          <ScoresDialog isOpen={this.state.isScoresOpen} onClose={this.handleScoreClose.bind(this)} ensembleScores={this.state.ensembleData} neuralNetworkScores={{young: this.state.cnnsData.young, old: this.state.cnnsData.old}}/>
+          <TrainingDialog isOpen={this.state.isTrainingOpen} onClose={this.handleTrainClose.bind(this)} onTrain={this.handleTrainNewModel.bind(this)}/>
           <div className="credits">
             <img src="https://soe.lau.edu.lb/images/soe.png" />
             <h4>IEA Project Fall 2020</h4>
