@@ -240,9 +240,9 @@ def ensemble_preprocessing(image_data_ensemble, image_labels_ensemble, testing_s
 
     model = KNeighborsClassifier(n_neighbors= k_optimal, weights = 'distance', algorithm='ball_tree', p=3)
     model2 = svm.SVC(kernel='rbf')
-    # model3=VotingClassifier(estimators=[('KNN',model), ('SVM',model2)], voting='hard')
+    model3=VotingClassifier(estimators=[('KNN',model), ('SVM',model2)], voting='hard')
 
-    model.fit(X_train, y_train.ravel())
+    model3.fit(X_train, y_train.ravel())
 
     #Train the model on the entire training set
 
@@ -250,7 +250,7 @@ def ensemble_preprocessing(image_data_ensemble, image_labels_ensemble, testing_s
     print(y_train.shape)
 
     # model3.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    y_pred = model3.predict(X_test)
 
     # kfold_ada = model_selection.KFold(n_splits=10, random_state=10)
     # model_ada = AdaBoostClassifier(n_estimators=30, random_state=10)
@@ -261,7 +261,7 @@ def ensemble_preprocessing(image_data_ensemble, image_labels_ensemble, testing_s
     # print(results_ada.mean())
     print(results_adas)
 
-    return model, results_adas, k_optimal
+    return model3, results_adas, k_optimal
     # todo: return ensemble model, and all scores
 
 
@@ -524,7 +524,8 @@ def predict_final_label_ensemble(X_test_ens, X_test, ensemble_pretrained=True, y
 
 def predict_final_label_classes(X_test):
     model = load_model('./savedata/classes.h5')
-    result = model.predict(X_test)
+    ann_X = X_test.reshape(1,200,200)
+    result = model.predict(ann_X)
 
     index = np.argmax(result)
     if index == 0:
@@ -802,15 +803,16 @@ def performJob(job, sharedObject):
             model_young = 'pretrained_young'
             model_classes = 'pretrained_classes'
 
-            sharedObject['model_ensemble'] = model_ensemble
-            sharedObject['model_young'] = model_young
-            sharedObject['model_old'] = model_old
-            sharedObject['model_classes'] = model_classes
+            newConfig = {}
+            newConfig['model_ensemble'] = model_ensemble
+            newConfig['model_young'] = model_young
+            newConfig['model_old'] = model_old
+            newConfig['model_classes'] = model_classes
             if job['resetType'] == 'ensemble':
                 model_type = 'ensemble'
             else:
                 model_type = 'classes'
-            sharedObject['model_type'] = model_type
+            newConfig['model_type'] = model_type
 
             with open('./savedata/ensemble.json', 'r') as f:
                 ensembleScores = json.load(f)
@@ -821,12 +823,12 @@ def performJob(job, sharedObject):
             with open('./savedata/oldnn.json', 'r') as f:
                 oldScores = json.load(f)
 
-            sharedObject['ensemble_pretrained'] = ensembleScores
-            sharedObject['youngNNPretrained'] = youngScores
-            sharedObject['oldNNPretrained'] = oldScores
+            newConfig['ensemble_pretrained'] = ensembleScores
+            newConfig['youngNNPretrained'] = youngScores
+            newConfig['oldNNPretrained'] = oldScores
 
             with open('./savedata/config.json', 'w') as f:
-                json.dump(sharedObject, f)
+                json.dump(newConfig, f)
 
             sharedObject['jobProgress'][job['jobID']] = 1.0
 

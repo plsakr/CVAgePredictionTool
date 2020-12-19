@@ -72,7 +72,7 @@ class ConfigureModels extends React.Component<ConfigureProps, ConfigureState>{
     render() {
         return (<div>
             { (this.state.chosen?.modelType === 0) ? <div>
-                    {((!this.state.chosen.trainInitial || this.state.chosen.initialType === "SVM") && !this.state.chosen.trainYoung && !this.state.chosen.trainOld) ?
+                    {((!this.state.chosen.trainInitial || this.state.chosen.initialType === "SVM")) ?
                         <p>No Configuration Needed!</p>
                         :
                         <div>
@@ -97,18 +97,18 @@ class ConfigureModels extends React.Component<ConfigureProps, ConfigureState>{
                                             valueLabelDisplay="auto"/>
                                 </FormGroup>
                             </div> : <div></div>}
-                            { (this.state.chosen.trainYoung) ? <div>
-                                    <TextField id="outlined-basic" label="Young Connected Layers" variant="outlined" onChange={this.onYoungNbrChange.bind(this)} value={this.state.youngLayers}/>
-                            </div> : <div></div>}
-                            { (this.state.chosen.trainOld) ? <div>
-                                    <TextField id="outlined-basic" label="Old Connected Layers" variant="outlined" onChange={this.onOldNbrChange.bind(this)} value={this.state.oldLayers}/>
-                            </div> : <div></div>}
+                            {/*{ (this.state.chosen.trainYoung) ? <div>*/}
+                            {/*        <TextField id="outlined-basic" label="Young Connected Layers" variant="outlined" onChange={this.onYoungNbrChange.bind(this)} value={this.state.youngLayers}/>*/}
+                            {/*</div> : <div></div>}*/}
+                            {/*{ (this.state.chosen.trainOld) ? <div>*/}
+                            {/*        <TextField id="outlined-basic" label="Old Connected Layers" variant="outlined" onChange={this.onOldNbrChange.bind(this)} value={this.state.oldLayers}/>*/}
+                            {/*</div> : <div></div>}*/}
                         </div>
                     }
                 </div>
              :
                 <div>
-                {this.state.chosen?.fullClassesTrain ? <TextField id="outlined-basic" label="Connected Layers" variant="outlined" onChange={this.onFullNbrChange.bind(this)} value={this.state.fullClassifierLayers}/> : <p>No Configuration Needed!</p>}
+                <p>No Configuration Needed!</p>
                 </div>
             }
         </div>);

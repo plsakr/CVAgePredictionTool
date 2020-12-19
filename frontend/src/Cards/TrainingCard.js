@@ -25,10 +25,6 @@ function TrainingCard(props) {
         <p className="longText">
           To train a different model, click the Train button below
         </p>
-        <p className="longText">
-          To reset the model to the default pre-trained model, click the reset
-          button
-        </p>
         <div className="trainingButtonsDiv">
           <Button
             className="trainingButtons"
@@ -39,16 +35,16 @@ function TrainingCard(props) {
           >
             Train
           </Button>
-          <Button
-            disabled={isReset}
-            className="trainingButtons"
-            variant="contained"
-            color="secondary"
-            disableElevation
-            onClick={handleReset}
-          >
-            Reset
-          </Button>
+          {/*<Button*/}
+          {/*  disabled={isReset}*/}
+          {/*  className="trainingButtons"*/}
+          {/*  variant="contained"*/}
+          {/*  color="secondary"*/}
+          {/*  disableElevation*/}
+          {/*  onClick={handleReset}*/}
+          {/*>*/}
+          {/*  Reset*/}
+          {/*</Button>*/}
         </div>
       </div>
     </Card>

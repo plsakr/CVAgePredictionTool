@@ -31,12 +31,12 @@ class EnsembleScores extends React.Component<EnsembleScoreData, any> {
                 <p className="info">
                     <em>Parameters: </em> K = {this.modelParams.K}
                 </p>
-                <p className="info">
-                    <em>Training Instances: </em> {this.modelParams.train_nbr}
-                </p>
-                <p className="info">
-                    <em>Testing Instances: </em> {this.modelParams.test_nbr}
-                </p>
+                {/*<p className="info">*/}
+                {/*    <em>Training Instances: </em> {this.modelParams.train_nbr}*/}
+                {/*</p>*/}
+                {/*<p className="info">*/}
+                {/*    <em>Testing Instances: </em> {this.modelParams.test_nbr}*/}
+                {/*</p>*/}
                 <p className="info">
                     <em>Accuracy: </em> {Math.round(this.modelScores.acc * 100)}%
                 </p>

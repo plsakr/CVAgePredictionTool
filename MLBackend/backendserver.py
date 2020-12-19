@@ -97,17 +97,17 @@ def train_model():
                 adultImages = request.json['adultImages']
                 middleAgedImages = request.json['middleAgedImages']
                 oldImages = request.json['oldImages']
-                job = {'type': 'TRAIN', 'trainType': 'ensemble','train_initial': train_initial, 'train_young':train_young,
-                   'train_old': train_old, 'optimizeK': optimizeK, 'minK': minK,'custom':True, 'maxK': maxK, 'testingRatio': testingRatio,
+                job = {'type': 'TRAIN', 'trainType': 'ensemble','trainInitial': train_initial, 'trainYoung':train_young,
+                   'trainOld': train_old, 'optimizeK': optimizeK, 'minK': minK,'customData':True, 'maxK': maxK, 'testingRatio': testingRatio,
                    'jobID': jobId, 'youngImages': youngImages,'adultImages': adultImages, 'middleAgedImages': middleAgedImages,
                        'oldImages': oldImages}
 
                 jobQueue.put(job)
                 return {'jobDone': False, 'jobId': jobId}
             else:
-                job = {'type': 'TRAIN', 'trainType': 'ensemble', 'train_initial': train_initial,
-                       'train_young': train_young, 'custom': False,
-                       'train_old': train_old, 'optimizeK': optimizeK, 'minK': minK, 'maxK': maxK,
+                job = {'type': 'TRAIN', 'trainType': 'ensemble', 'trainInitial': train_initial,
+                       'trainYoung': train_young, 'customData': False,
+                       'trainOld': train_old, 'optimizeK': optimizeK, 'minK': minK, 'maxK': maxK,
                        'testingRatio': testingRatio,
                        'jobID': jobId}
                 jobQueue.put(job)
@@ -136,16 +136,16 @@ def train_model():
                 seven = request.json['seven']
                 eight = request.json['eight']
                 nine = request.json['nine']
-                job = {'type': 'TRAIN', 'trainType': 'classes', 'train_initial': train_initial,
-                       'testingRatio': testingRatio, 'custom': True,
+                job = {'type': 'TRAIN', 'trainType': 'classes', 'trainInitial': train_initial,
+                       'testingRatio': testingRatio, 'customData': True,
                        'jobID': jobId, 'one': one, 'two': two,'three':three,
                        'four':four,'five':five,'six':six,'seven':seven,'eight':eight,'nine':nine}
 
                 jobQueue.put(job)
                 return {'jobDone': False, 'jobId': jobId}
             else:
-                job = {'type': 'TRAIN', 'trainType': 'classes', 'train_initial': train_initial,
-                       'testingRatio': testingRatio, 'custom': False}
+                job = {'type': 'TRAIN', 'trainType': 'classes', 'trainInitial': train_initial,
+                       'testingRatio': testingRatio, 'customData': False}
 
                 jobQueue.put(job)
                 return {'jobDone': False, 'jobId': jobId}
@@ -277,26 +277,26 @@ def get_model_info():
     # sharedObject['model_classes']
     result = {}
 
-    if model_type == 'ensemble':
-        model_ensemble = sharedObject['model_ensemble']
-        model_young = sharedObject['model_young']
-        model_old = sharedObject['model_old']
+    # if model_type == 'ensemble':
+    model_ensemble = sharedObject['model_ensemble']
+    model_young = sharedObject['model_young']
+    model_old = sharedObject['model_old']
 
-        if model_ensemble == 'pretrained_ensemble':
-            result['model_name'] = 'pretrained_ensemble'
-            result['ensemble_score'] = sharedObject['ensemble_pretrained']
-        else:
-            result['ensemble_score'] = sharedObject['ensemble']
+    if model_ensemble == 'pretrained_ensemble':
+        result['model_name'] = 'pretrained_ensemble'
+        result['ensemble_score'] = sharedObject['ensemble_pretrained']
+    else:
+        result['ensemble_score'] = sharedObject['ensemble']
 
-        if model_old == 'pretrained_old':
-            result['old_nn_score'] = sharedObject['oldNNPretrained']
-        else:
-            result['old_nn_score'] = sharedObject['oldNN']
+    if model_old == 'pretrained_old':
+        result['old_nn_score'] = sharedObject['oldNNPretrained']
+    else:
+        result['old_nn_score'] = sharedObject['oldNN']
 
-        if model_young == 'pretrained_young':
-            result['young_nn_score'] = sharedObject['youngNNPretrained']
-        else:
-            result['young_nn_score'] = sharedObject['youngNN']
+    if model_young == 'pretrained_young':
+        result['young_nn_score'] = sharedObject['youngNNPretrained']
+    else:
+        result['young_nn_score'] = sharedObject['youngNN']
     # if modelName == 'pretrained_knn_model':
     #     result = {'isTraining': sharedObject['isTraining'], 'trainingId': sharedObject['trainingId'], 'model_name': modelName, 'model_scores': sharedObject['p_model_scores'], 'model_params': sharedObject['p_model_params']}
     # else:

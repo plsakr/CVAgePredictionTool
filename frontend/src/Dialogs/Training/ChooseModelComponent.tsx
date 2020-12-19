@@ -104,7 +104,6 @@ class ChooseModelComponent extends React.Component<ChooseProps, ChooseState>{
                 <FormControl className="formItem">
                     <FormLabel>Choose a Classifier:</FormLabel>
                     <RadioGroup value={this.state.fullClassesTrain} onChange={this.onFUllClassifierChange.bind(this)} row>
-                        <FormControlLabel value={true} control={<Radio />} label="Train New CNN" />
                         <FormControlLabel value={false} control={<Radio />} label="Use Pretrained CNN" />
                     </RadioGroup>
                 </FormControl>
